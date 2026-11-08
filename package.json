@@ -1,0 +1,33 @@
+{
+  "name": "canvas-word",
+  "private": true,
+  "description": "Canvas-based Word document engine and DOCX codec (maintained MIT forks)",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/engine",
+    "packages/codec"
+  ],
+  "engines": {
+    "node": "^24.22.1 || ^26.13.0"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces",
+    "test:browser": "npm run test:browser -w @hivemagnus/canvas-word-engine",
+    "build": "npm run build --workspaces",
+    "pack:check": "node scripts/check-package.mjs",
+    "scan:secrets": "bash scripts/scan-secrets.sh",
+    "check:private": "bash scripts/check-private-data.sh",
+    "privacy:test": "node --test scripts/test-privacy-policy.mjs scripts/test-publish-environment.mjs scripts/test-publish-package.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "verify": "npm run privacy:test && npm run scan:secrets && npm run check:private && npm run typecheck && npm test && npm run build && npm run test:browser && npm run pack:check"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "playwright": "1.64.1",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5",
+    "yaml": "2.9.1"
+  }
+}

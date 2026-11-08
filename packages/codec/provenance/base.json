@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "upstreamPackage": "@hufe921/canvas-editor-plugin-docx",
+  "upstreamVersion": "1.0.0",
+  "forkPackage": "@hivemagnus/canvas-word-codec",
+  "baseCommit": "4741a9f8885d57fde1704d39a7aa930aeadc51e6",
+  "originalSourceArchiveSha256": "cd2c5f5422e36e835394722d6b39f83eb9662b4a203e46f5e629b835b7d7ef09",
+  "originalPublishedTarballSha256": "97f6e7bcdc35b0b6714d6a795049bda4ac32f13383491cebd93d957510c9825c",
+  "originalPublishedIntegrity": "sha512-f3MIzNU6RyJ6ZYT7SW8ZKBS260hJnq4eidPOD2e4YmauGJzvqtePf2Hrser0+mJkDkv4hyZ4bes6AsEYyVLbng==",
+  "upstreamClosureCount": 26,
+  "upstreamTypePackageCount": 2,
+  "upstreamClosureRuntimeIncluded": false,
+  "jszipLicenseElection": "MIT",
+  "newRuntimeDependencies": 8,
+  "noBundledFontsOrImages": true
+}

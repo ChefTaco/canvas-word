@@ -1,0 +1,38 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.tgz
+.vitest-cache/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+.npmrc
+
+# Keys, certificates and databases
+certs/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.db
+*.sqlite
+*.sqlite3
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Local privacy denylist and private agent notes (never commit)
+.private-terms
+AGENTS.local.md
+CLAUDE.local.md
+*.local.md
+output/
+test-results/
+.claude/

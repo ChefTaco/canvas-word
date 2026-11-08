@@ -1,0 +1,64 @@
+{
+  "name": "@hivemagnus/canvas-word-codec",
+  "version": "1.0.0",
+  "description": "Headless DOCX codec: Word bytes to and from a neutral exchange document (maintained MIT fork of the canvas-editor DOCX plugin)",
+  "keywords": [
+    "docx",
+    "word",
+    "ooxml",
+    "canvas-editor",
+    "track-changes",
+    "comments"
+  ],
+  "author": "ChefTaco",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChefTaco/canvas-word.git",
+    "directory": "packages/codec"
+  },
+  "homepage": "https://github.com/ChefTaco/canvas-word/tree/main/packages/codec#readme",
+  "bugs": {
+    "url": "https://github.com/ChefTaco/canvas-word/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": "^24.22.1 || ^26.13.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICES.md",
+    "UPSTREAM.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "0.9.12",
+    "saxes": "6.0.0",
+    "yauzl": "3.4.0",
+    "yazl": "3.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/yauzl": "3.4.0",
+    "@types/yazl": "3.3.1"
+  }
+}

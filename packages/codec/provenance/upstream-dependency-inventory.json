@@ -1,0 +1,713 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "4741a9f8885d57fde1704d39a7aa930aeadc51e6",
+  "packages": [
+    {
+      "key": "@types/node@20.19.41",
+      "resolution": {
+        "integrity": "sha512-ECymXOukMnOoVkC2bb1Vc/w/836DXncOg5m8Xj1RH7xSHZJWNYY6Zh7EH477vcnD5egKNNfy2RpNOmuChhFPgQ=="
+      },
+      "dependencies": {
+        "undici-types": "6.21.0"
+      },
+      "name": "@types/node",
+      "version": "20.19.41",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/@types/node/-/node-20.19.41.tgz",
+      "integrity": "sha512-ECymXOukMnOoVkC2bb1Vc/w/836DXncOg5m8Xj1RH7xSHZJWNYY6Zh7EH477vcnD5egKNNfy2RpNOmuChhFPgQ==",
+      "sha256": "b35bc8fd37da1bea4bf4fe6021b5f0322579c6f4e4fb0d312bff0bc361e27c6f",
+      "notices": [
+        {
+          "sourcePath": "node v20.19/LICENSE",
+          "noticePath": "provenance/notices/@types__node-20.19.41/node v20.19__LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "color-convert@2.0.1",
+      "resolution": {
+        "integrity": "sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ=="
+      },
+      "engines": {
+        "node": ">=7.0.0"
+      },
+      "dependencies": {
+        "color-name": "1.1.4"
+      },
+      "name": "color-convert",
+      "version": "2.0.1",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/color-convert/-/color-convert-2.0.1.tgz",
+      "integrity": "sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==",
+      "sha256": "920fa43538c019a085dbbf04cb6f72cc337624e5f5217519f0e7b2ef784e7ce1",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/color-convert-2.0.1/package__LICENSE",
+          "sha256": "693866fc419c6f61c8570438ec00659d156ec2b4d4a4d04091711f5f11a365d4"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "color-name@1.1.4",
+      "resolution": {
+        "integrity": "sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA=="
+      },
+      "dependencies": {},
+      "name": "color-name",
+      "version": "1.1.4",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz",
+      "integrity": "sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==",
+      "sha256": "507b7c4461e8eb941355af9a59e9a7e02cd0e7c6176b48d1809766344f3f1708",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/color-name-1.1.4/package__LICENSE",
+          "sha256": "c064f7a3e353bc1bc977f3c897941c75ef763f44f41677e0a15370ca0853d6e2"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "color-string@1.9.1",
+      "resolution": {
+        "integrity": "sha512-shrVawQFojnZv6xM40anx4CkoDP+fZsw/ZerEMsW/pyzsRbElpsL/DBVW7q3ExxwusdNXI3lXpuhEZkzs8p5Eg=="
+      },
+      "dependencies": {
+        "color-name": "1.1.4",
+        "simple-swizzle": "0.2.4"
+      },
+      "name": "color-string",
+      "version": "1.9.1",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/color-string/-/color-string-1.9.1.tgz",
+      "integrity": "sha512-shrVawQFojnZv6xM40anx4CkoDP+fZsw/ZerEMsW/pyzsRbElpsL/DBVW7q3ExxwusdNXI3lXpuhEZkzs8p5Eg==",
+      "sha256": "323b0dd52ed9d843fe10136661762b1d529cf922dae0cc465944e9dbfc14b286",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/color-string-1.9.1/package__LICENSE",
+          "sha256": "8984783ab2478bbee455f0eb6c375b5b62c57c86d4a55f6bf96dfd08e8d48a10"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "color@4.2.3",
+      "resolution": {
+        "integrity": "sha512-1rXeuUUiGGrykh+CeBdu5Ie7OJwinCgQY0bc7GCRxy5xVHy+moaqkpL/jqQq0MtQOeYcrqEz4abc5f0KtU7W4A=="
+      },
+      "engines": {
+        "node": ">=12.5.0"
+      },
+      "dependencies": {
+        "color-convert": "2.0.1",
+        "color-string": "1.9.1"
+      },
+      "name": "color",
+      "version": "4.2.3",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/color/-/color-4.2.3.tgz",
+      "integrity": "sha512-1rXeuUUiGGrykh+CeBdu5Ie7OJwinCgQY0bc7GCRxy5xVHy+moaqkpL/jqQq0MtQOeYcrqEz4abc5f0KtU7W4A==",
+      "sha256": "a9aca115dd43bdb24b902dc67795a664841968a73838e06d4f156eac4e563bad",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/color-4.2.3/package__LICENSE",
+          "sha256": "4c0844caafd3db9a4b643ea493558873710f4e9c8b257887ba066e5e80557848"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "core-util-is@1.0.3",
+      "resolution": {
+        "integrity": "sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ=="
+      },
+      "dependencies": {},
+      "name": "core-util-is",
+      "version": "1.0.3",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.3.tgz",
+      "integrity": "sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==",
+      "sha256": "4430fdc71f2cf3b5e297113b9a692da2d6cff96cf84da00f0ecef5e5a6e74d0c",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/core-util-is-1.0.3/package__LICENSE",
+          "sha256": "33b734d60042d0fe0c92dd1fc1e874193a1c899ec3e276a2eb935d2d0bf5b710"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "docx@8.6.0",
+      "resolution": {
+        "integrity": "sha512-JEzPozEsuGIyUkEqdGlCv/b1avYeXjR4PjwiLdPwRKdsI9spBCq4WP0QcGYfIANpgYdJSphw4IT8M/a9dpnpvQ=="
+      },
+      "engines": {
+        "node": ">=10"
+      },
+      "deprecated": "A API breaking change was introduced here, which was incompatible with semantic versioning",
+      "dependencies": {
+        "@types/node": "20.19.41",
+        "jszip": "3.10.1",
+        "nanoid": "5.1.11",
+        "xml": "1.0.1",
+        "xml-js": "1.6.11"
+      },
+      "name": "docx",
+      "version": "8.6.0",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/docx/-/docx-8.6.0.tgz",
+      "integrity": "sha512-JEzPozEsuGIyUkEqdGlCv/b1avYeXjR4PjwiLdPwRKdsI9spBCq4WP0QcGYfIANpgYdJSphw4IT8M/a9dpnpvQ==",
+      "sha256": "1304aa21a5fb75d993ffc2472b1e13a749cae2880bda20e747a542ff00e4fbe8",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/docx-8.6.0/package__LICENSE",
+          "sha256": "b5b2364c0c95a26b2a2399d7e706a61acac680be1d5b180b00592ee85830bffb"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "immediate@3.0.6",
+      "resolution": {
+        "integrity": "sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ=="
+      },
+      "dependencies": {},
+      "name": "immediate",
+      "version": "3.0.6",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/immediate/-/immediate-3.0.6.tgz",
+      "integrity": "sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==",
+      "sha256": "98c792f39650b00818c05dcc407902034dc4092f368596b37658d44f28739d11",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE.txt",
+          "noticePath": "provenance/notices/immediate-3.0.6/package__LICENSE.txt",
+          "sha256": "809e66de579fb7d92503848bbe6d1f348f4f6521a71e5d294fe7cc0c87a3b4ff"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "inherits@2.0.4",
+      "resolution": {
+        "integrity": "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ=="
+      },
+      "dependencies": {},
+      "name": "inherits",
+      "version": "2.0.4",
+      "license": "ISC",
+      "electedLicense": "ISC",
+      "tarball": "https://registry.npmjs.org/inherits/-/inherits-2.0.4.tgz",
+      "integrity": "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==",
+      "sha256": "d94dbc6c1bb3c5ac0fb12a73ade187108fc60de273a1b754f55044eb5e24afaf",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/inherits-2.0.4/package__LICENSE",
+          "sha256": "5ffe28e7ade7d8f10d85d5337a73fd793dac5c462fb9a28fbf8c5046c7fbca3b"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "is-arrayish@0.3.4",
+      "resolution": {
+        "integrity": "sha512-m6UrgzFVUYawGBh1dUsWR5M2Clqic9RVXC/9f8ceNlv2IcO9j9J/z8UoCLPqtsPBFNzEpfR3xftohbfqDx8EQA=="
+      },
+      "dependencies": {},
+      "name": "is-arrayish",
+      "version": "0.3.4",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/is-arrayish/-/is-arrayish-0.3.4.tgz",
+      "integrity": "sha512-m6UrgzFVUYawGBh1dUsWR5M2Clqic9RVXC/9f8ceNlv2IcO9j9J/z8UoCLPqtsPBFNzEpfR3xftohbfqDx8EQA==",
+      "sha256": "7b8b4790349e21eaf456fc7f7a4710361ac14ab6bdbb1865d751cc1576ebeaa2",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/is-arrayish-0.3.4/package__LICENSE",
+          "sha256": "92b07a2e5b0e051d37dde85042c736d6d551cfcbc0983f39d7ef903b3986bbc1"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "isarray@1.0.0",
+      "resolution": {
+        "integrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ=="
+      },
+      "dependencies": {},
+      "name": "isarray",
+      "version": "1.0.0",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz",
+      "integrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ==",
+      "sha256": "e23c76f14f5222e07e39d89858b61e8e33f96956de9e0df3659cbdf8db950c87",
+      "notices": [],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "jszip@3.10.1",
+      "resolution": {
+        "integrity": "sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g=="
+      },
+      "dependencies": {
+        "lie": "3.3.0",
+        "pako": "1.0.11",
+        "readable-stream": "2.3.8",
+        "setimmediate": "1.0.5"
+      },
+      "name": "jszip",
+      "version": "3.10.1",
+      "license": "(MIT OR GPL-3.0-or-later)",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/jszip/-/jszip-3.10.1.tgz",
+      "integrity": "sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g==",
+      "sha256": "5117f4a2a645aeb307bf3b829c575ad58135cc97e75291e594532ab5b5b21b23",
+      "notices": [
+        {
+          "sourcePath": "package/lib/license_header.js",
+          "noticePath": "provenance/notices/jszip-3.10.1/package__lib__license_header.js",
+          "sha256": "27873abeec2df3693480a8d1b8fe17dd61bee843d1b39c1c9cfab57ffe93099e"
+        },
+        {
+          "sourcePath": "package/LICENSE.markdown",
+          "noticePath": "provenance/notices/jszip-3.10.1/package__LICENSE.markdown",
+          "sha256": "566c953c6090b1218ca6217dd7359d45dde46581968586dc607d59a78af6a9c4"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "lie@3.3.0",
+      "resolution": {
+        "integrity": "sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ=="
+      },
+      "dependencies": {
+        "immediate": "3.0.6"
+      },
+      "name": "lie",
+      "version": "3.3.0",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/lie/-/lie-3.3.0.tgz",
+      "integrity": "sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==",
+      "sha256": "2db8461cd4a10e2fc3588c8c55da34d33465ff81cc19c72416bbcaec7ee6a36e",
+      "notices": [
+        {
+          "sourcePath": "package/license.md",
+          "noticePath": "provenance/notices/lie-3.3.0/package__license.md",
+          "sha256": "5c81b0caa98593408b03125efa25efe622341ed87ae55561968828cd887d64a4"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "nanoid@5.1.11",
+      "resolution": {
+        "integrity": "sha512-v+KEsUv2ps74PaSKv0gHTxTCgMXOIfBEbaqa6w6ISIGC7ZsvHN4N9oJ8d4cmf0n5oTzQz2SLmThbQWhjd/8eKg=="
+      },
+      "engines": {
+        "node": "^18 || >=20"
+      },
+      "hasBin": true,
+      "dependencies": {},
+      "name": "nanoid",
+      "version": "5.1.11",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/nanoid/-/nanoid-5.1.11.tgz",
+      "integrity": "sha512-v+KEsUv2ps74PaSKv0gHTxTCgMXOIfBEbaqa6w6ISIGC7ZsvHN4N9oJ8d4cmf0n5oTzQz2SLmThbQWhjd/8eKg==",
+      "sha256": "ee4c3fc933dd6b277e35da3f3688037b1a2225946cb130639dea534e5ac3c470",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/nanoid-5.1.11/package__LICENSE",
+          "sha256": "4383cb2c3608397ce7a4159502614ed66890f8999c2a9c056dd3b1024d6721f0"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "pako@1.0.11",
+      "resolution": {
+        "integrity": "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="
+      },
+      "dependencies": {},
+      "name": "pako",
+      "version": "1.0.11",
+      "license": "(MIT AND Zlib)",
+      "electedLicense": "(MIT AND Zlib)",
+      "tarball": "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz",
+      "integrity": "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==",
+      "sha256": "0d4028dc0352a740c30cbfd772917f2744986d42bfa0b06ec7642bffe7ad3941",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/pako-1.0.11/package__LICENSE",
+          "sha256": "a04665b3b2de56c66730c1f720f528175739e4104f79073614aa611da1e85539"
+        },
+        {
+          "sourcePath": "package/lib/zlib/adler32.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__adler32.js",
+          "sha256": "99618eb68a96858148e2dd56f478aa7e4321c434f5f2ee6c57f59c0c568f0596"
+        },
+        {
+          "sourcePath": "package/lib/zlib/constants.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__constants.js",
+          "sha256": "e0c4148ed267a27f03aba9f9a34cba4bade2090c0f12905907539e38c842abbc"
+        },
+        {
+          "sourcePath": "package/lib/zlib/crc32.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__crc32.js",
+          "sha256": "213f85e8b2e52e2cf6f7634897197400f7ddaed587274f160045f0b548ec21da"
+        },
+        {
+          "sourcePath": "package/lib/zlib/deflate.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__deflate.js",
+          "sha256": "4b9b71ae7f42e506fe1fb134f1c21b944ef2b7ef79667ba1fe59eb963c353d22"
+        },
+        {
+          "sourcePath": "package/lib/zlib/gzheader.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__gzheader.js",
+          "sha256": "8fa0b4995cea477be96b8783a7d6c7cf5fec96765c2108c3bd52e77104bfdbd3"
+        },
+        {
+          "sourcePath": "package/lib/zlib/inffast.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__inffast.js",
+          "sha256": "b1beb3b55270e8338f23fc397132d179942d5866153ca4e9be264200b00c0d44"
+        },
+        {
+          "sourcePath": "package/lib/zlib/inflate.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__inflate.js",
+          "sha256": "d31799a23f2ae87f0c52d21241c92278b41d23bb5365b452f2706d41b00c4245"
+        },
+        {
+          "sourcePath": "package/lib/zlib/inftrees.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__inftrees.js",
+          "sha256": "75f75d8ae4a7bed86f90a4a38f70c5d95e807515e9326801f9a073a7f2bf8bc7"
+        },
+        {
+          "sourcePath": "package/lib/zlib/messages.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__messages.js",
+          "sha256": "eec5f5d6b8120ada9cd48a3ca0a253c64777906e835477b090e053434d38cf6c"
+        },
+        {
+          "sourcePath": "package/lib/zlib/trees.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__trees.js",
+          "sha256": "718adbbf68f4343bf17d61edffd9d0788a96a93e4e191d857459d95257e614cf"
+        },
+        {
+          "sourcePath": "package/lib/zlib/zstream.js",
+          "noticePath": "provenance/notices/pako-1.0.11/package__lib__zlib__zstream.js",
+          "sha256": "5fa10c7a59ca99113cf92d1260e56cbd6282e15afa85dc8a0eb8e8d6d2321298"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "process-nextick-args@2.0.1",
+      "resolution": {
+        "integrity": "sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag=="
+      },
+      "dependencies": {},
+      "name": "process-nextick-args",
+      "version": "2.0.1",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/process-nextick-args/-/process-nextick-args-2.0.1.tgz",
+      "integrity": "sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==",
+      "sha256": "425bf8c725d23bc5ac76bcedd10d9cdbbd6354c7273dd7def44417cfbca8889b",
+      "notices": [
+        {
+          "sourcePath": "package/license.md",
+          "noticePath": "provenance/notices/process-nextick-args-2.0.1/package__license.md",
+          "sha256": "ecdccbcf39024f624ded480c01c0b25458e1eca8f26ecf040933865ce56d9a4f"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "readable-stream@2.3.8",
+      "resolution": {
+        "integrity": "sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA=="
+      },
+      "dependencies": {
+        "core-util-is": "1.0.3",
+        "inherits": "2.0.4",
+        "isarray": "1.0.0",
+        "process-nextick-args": "2.0.1",
+        "safe-buffer": "5.1.2",
+        "string_decoder": "1.1.1",
+        "util-deprecate": "1.0.2"
+      },
+      "name": "readable-stream",
+      "version": "2.3.8",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/readable-stream/-/readable-stream-2.3.8.tgz",
+      "integrity": "sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA==",
+      "sha256": "1648613948f68ac9cbbe8f72a3f93a67ecdb862ffb57946a2c0bbb5a1479a532",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/readable-stream-2.3.8/package__LICENSE",
+          "sha256": "ec62dc96da0099b87f4511736c87309335527fb7031639493e06c95728dc8c54"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "safe-buffer@5.1.2",
+      "resolution": {
+        "integrity": "sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g=="
+      },
+      "dependencies": {},
+      "name": "safe-buffer",
+      "version": "5.1.2",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.1.2.tgz",
+      "integrity": "sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==",
+      "sha256": "e09206c60fccafb952c854af7629cbb031a98d6da2e143fb3aa3c8a48402aa22",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/safe-buffer-5.1.2/package__LICENSE",
+          "sha256": "c7cc929b57080f4b9d0c6cf57669f0463fc5b39906344dfc8d3bc43426b30eac"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "sax@1.6.0",
+      "resolution": {
+        "integrity": "sha512-6R3J5M4AcbtLUdZmRv2SygeVaM7IhrLXu9BmnOGmmACak8fiUtOsYNWUS4uK7upbmHIBbLBeFeI//477BKLBzA=="
+      },
+      "engines": {
+        "node": ">=11.0.0"
+      },
+      "dependencies": {},
+      "name": "sax",
+      "version": "1.6.0",
+      "license": "BlueOak-1.0.0",
+      "electedLicense": "BlueOak-1.0.0",
+      "tarball": "https://registry.npmjs.org/sax/-/sax-1.6.0.tgz",
+      "integrity": "sha512-6R3J5M4AcbtLUdZmRv2SygeVaM7IhrLXu9BmnOGmmACak8fiUtOsYNWUS4uK7upbmHIBbLBeFeI//477BKLBzA==",
+      "sha256": "d424acd207642df18c2d814411907b9a108ff1dfca341cfddf523bd57af699f4",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE.md",
+          "noticePath": "provenance/notices/sax-1.6.0/package__LICENSE.md",
+          "sha256": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "setimmediate@1.0.5",
+      "resolution": {
+        "integrity": "sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA=="
+      },
+      "dependencies": {},
+      "name": "setimmediate",
+      "version": "1.0.5",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/setimmediate/-/setimmediate-1.0.5.tgz",
+      "integrity": "sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==",
+      "sha256": "5cb9fc22698364ed42c02d6aa3dc50ffeafa68452ae84699672e3dfd74922c9e",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE.txt",
+          "noticePath": "provenance/notices/setimmediate-1.0.5/package__LICENSE.txt",
+          "sha256": "c4b4ad3a5746f1f5249a6dd90396ec519264e1bb02e01e48a6522c48a3a97cb4"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "simple-swizzle@0.2.4",
+      "resolution": {
+        "integrity": "sha512-nAu1WFPQSMNr2Zn9PGSZK9AGn4t/y97lEm+MXTtUDwfP0ksAIX4nO+6ruD9Jwut4C49SB1Ws+fbXsm/yScWOHw=="
+      },
+      "dependencies": {
+        "is-arrayish": "0.3.4"
+      },
+      "name": "simple-swizzle",
+      "version": "0.2.4",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/simple-swizzle/-/simple-swizzle-0.2.4.tgz",
+      "integrity": "sha512-nAu1WFPQSMNr2Zn9PGSZK9AGn4t/y97lEm+MXTtUDwfP0ksAIX4nO+6ruD9Jwut4C49SB1Ws+fbXsm/yScWOHw==",
+      "sha256": "6c63587ef4b42e7ff0b7b064666a702a78dd572550186b76290ab107b3277d26",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/simple-swizzle-0.2.4/package__LICENSE",
+          "sha256": "8f67ef1afdbd7b8ddc3e2da9968bb97af30795ae9c90a2cc4d867e5608216973"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "string_decoder@1.1.1",
+      "resolution": {
+        "integrity": "sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg=="
+      },
+      "dependencies": {
+        "safe-buffer": "5.1.2"
+      },
+      "name": "string_decoder",
+      "version": "1.1.1",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/string_decoder/-/string_decoder-1.1.1.tgz",
+      "integrity": "sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==",
+      "sha256": "af8262434508fa8292407f7fef4690d19eabb73387ca230b41f2a1155216963a",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/string_decoder-1.1.1/package__LICENSE",
+          "sha256": "11f2aafb37d06b3ee5bdaf06e9811141d0da05263c316f3d627f45c20d43261b"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "undici-types@6.21.0",
+      "resolution": {
+        "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="
+      },
+      "dependencies": {},
+      "name": "undici-types",
+      "version": "6.21.0",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz",
+      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+      "sha256": "cfa1a9a5e18988850e548f4f6b629c58da32dc32bebb116e58ea301e516fd16d",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/undici-types-6.21.0/package__LICENSE",
+          "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "util-deprecate@1.0.2",
+      "resolution": {
+        "integrity": "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="
+      },
+      "dependencies": {},
+      "name": "util-deprecate",
+      "version": "1.0.2",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/util-deprecate/-/util-deprecate-1.0.2.tgz",
+      "integrity": "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==",
+      "sha256": "79a1de983c1b393180c47456d6b73caab278a00ea6e37d5c6675f2dcdec2a3e5",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/util-deprecate-1.0.2/package__LICENSE",
+          "sha256": "0154425673db15cdfa80ecba2c9b1f1a867f7197a006764712849bfc3a93cbb7"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "xml-js@1.6.11",
+      "resolution": {
+        "integrity": "sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g=="
+      },
+      "hasBin": true,
+      "dependencies": {
+        "sax": "1.6.0"
+      },
+      "name": "xml-js",
+      "version": "1.6.11",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/xml-js/-/xml-js-1.6.11.tgz",
+      "integrity": "sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g==",
+      "sha256": "7fa22b957f335efef3ead84aaa8285e2f3b08dbfeee18f9f41021a1a0c584369",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/xml-js-1.6.11/package__LICENSE",
+          "sha256": "8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    },
+    {
+      "key": "xml@1.0.1",
+      "resolution": {
+        "integrity": "sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw=="
+      },
+      "dependencies": {},
+      "name": "xml",
+      "version": "1.0.1",
+      "license": "MIT",
+      "electedLicense": "MIT",
+      "tarball": "https://registry.npmjs.org/xml/-/xml-1.0.1.tgz",
+      "integrity": "sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw==",
+      "sha256": "38032bd701fa20427b2ee31ed55e6761ce1a881a6eabcd90005ebe74ab04a623",
+      "notices": [
+        {
+          "sourcePath": "package/LICENSE",
+          "noticePath": "provenance/notices/xml-1.0.1/package__LICENSE",
+          "sha256": "d2b3e2f62078f282f21a8c5119a44cc7313fe6aa4a22094c8ad93f4b577b7901"
+        }
+      ],
+      "deliveredRuntime": false,
+      "scope": "Original upstream source-lock closure; no legacy bundle in headless fork build"
+    }
+  ]
+}

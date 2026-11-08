@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/Hufe921/canvas-editor-plugin",
+  "commit": "0e8a1b36c8e94061edc19ce05b93c12fbad03b34",
+  "packagePath": "packages/docx",
+  "snapshot": "upstream-current",
+  "originalSource": "upstream",
+  "runtimeEntry": "src/index.ts",
+  "originalSourceCommit": "4741a9f8885d57fde1704d39a7aa930aeadc51e6",
+  "mergedOptionalDownloadPR": 45,
+  "headlessProposalPR46": "open-not-adopted-as-upstream"
+}
