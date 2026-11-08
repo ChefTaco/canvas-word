@@ -40,6 +40,7 @@ import { ITraceOption } from './Trace'
 import { IRulerOption } from './Ruler'
 import { IHintOption } from './Hint'
 import type { ISpellcheckOption } from './Spellcheck'
+import { BackendType } from '../dataset/enum/Editor'
 
 export interface ILabOption {
   /**
@@ -69,6 +70,8 @@ export interface IEditorOption {
   minSize?: number
   maxSize?: number
   defaultBasicRowMarginHeight?: number
+  /** Adopt an existing leading paragraph marker instead of inserting a blank paragraph. */
+  preserveLeadingParagraph?: boolean
   defaultRowMargin?: number
   defaultTabWidth?: number
   width?: number
@@ -93,6 +96,7 @@ export interface IEditorOption {
   margins?: IMargin
   pageMode?: PageMode
   renderMode?: RenderMode
+  backend?: BackendType
   defaultHyperlinkColor?: string
   paperDirection?: PaperDirection
   inactiveAlpha?: number
@@ -170,6 +174,8 @@ export type IUpdateOption = Omit<
 >
 
 export interface ISetValueOption {
+  /** Validated against formatted replacement data before content/history changes. */
+  externalBindings?: import('./ExternalBinding').IExternalElementBinding[]
   isSetCursor?: boolean
 }
 

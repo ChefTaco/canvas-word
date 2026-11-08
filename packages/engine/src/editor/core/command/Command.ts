@@ -10,6 +10,8 @@ export class Command {
   public executeBackspace: CommandAdapt['backspace']
   public executeSetRange: CommandAdapt['setRange']
   public executeReplaceRange: CommandAdapt['replaceRange']
+  public executeRestoreRange: CommandAdapt['restoreRange']
+  public getLocatedElementRects: CommandAdapt['getLocatedElementRects']
   public executeSetPositionContext: CommandAdapt['setPositionContext']
   public executeForceUpdate: CommandAdapt['forceUpdate']
   public executeBlur: CommandAdapt['blur']
@@ -35,6 +37,11 @@ export class Command {
   public executeList: CommandAdapt['list']
   public executeRowFlex: CommandAdapt['rowFlex']
   public executeRowMargin: CommandAdapt['rowMargin']
+  public executeSpacingBefore: CommandAdapt['spacingBefore']
+  public executeSpacingAfter: CommandAdapt['spacingAfter']
+  public executeIndentLeft: CommandAdapt['indentLeft']
+  public executeIndentRight: CommandAdapt['indentRight']
+  public executeIndentFirstLine: CommandAdapt['indentFirstLine']
   public executeInsertTable: CommandAdapt['insertTable']
   public executeInsertTableTopRow: CommandAdapt['insertTableTopRow']
   public executeInsertTableBottomRow: CommandAdapt['insertTableBottomRow']
@@ -51,6 +58,8 @@ export class Command {
   public executeTableBorderType: CommandAdapt['tableBorderType']
   public executeTableBorderColor: CommandAdapt['tableBorderColor']
   public executeTableTdBorderType: CommandAdapt['tableTdBorderType']
+  public executeTableTdBorderColor: CommandAdapt['tableTdBorderColor']
+  public executeTableTdBorderWidth: CommandAdapt['tableTdBorderWidth']
   public executeTableTdSlashType: CommandAdapt['tableTdSlashType']
   public executeTableTdBackgroundColor: CommandAdapt['tableTdBackgroundColor']
   public executeTableAutoFitToContent: CommandAdapt['tableAutoFitToContent']
@@ -125,6 +134,7 @@ export class Command {
   public executeInsertControl: CommandAdapt['insertControl']
   public executeJumpControl: CommandAdapt['jumpControl']
   public executeUpdateOptions: CommandAdapt['updateOptions']
+  public executeSetBackend: CommandAdapt['setBackend']
   public executeInsertTitle: CommandAdapt['insertTitle']
   public executeFocus: CommandAdapt['focus']
   public executeComputeElementListHeight: CommandAdapt['computeElementListHeight']
@@ -146,8 +156,9 @@ export class Command {
   public getRangeRow: CommandAdapt['getRangeRow']
   public getRangeParagraph: CommandAdapt['getRangeParagraph']
   public executeSetTouchSelectionEnabled: CommandAdapt['setTouchSelectionEnabled']
-  public executeSetExternalElementBindings: CommandAdapt['setExternalElementBindings']
+  public executeSetExternalElementBindings: CommandAdapt['setLegacyExternalElementBindings']
   public getRuntimeElementList: CommandAdapt['getRuntimeElementList']
+  public setExternalElementBindings: CommandAdapt['setExternalElementBindings']
   public getSurroundElementList: CommandAdapt['getSurroundElementList']
   public getKeywordRangeList: CommandAdapt['getKeywordRangeList']
   public getKeywordContext: CommandAdapt['getKeywordContext']
@@ -199,6 +210,10 @@ export class Command {
       'executeReplaceRange',
       adapt.replaceRange.bind(adapt)
     )
+    this.executeRestoreRange = this.wrap(
+      'executeRestoreRange', adapt.restoreRange.bind(adapt)
+    )
+    this.getLocatedElementRects = adapt.getLocatedElementRects.bind(adapt)
     this.executeSetPositionContext = this.wrap(
       'executeSetPositionContext',
       adapt.setPositionContext.bind(adapt)
@@ -259,6 +274,26 @@ export class Command {
     this.executeRowMargin = this.wrap(
       'executeRowMargin',
       adapt.rowMargin.bind(adapt)
+    )
+    this.executeSpacingBefore = this.wrap(
+      'executeSpacingBefore',
+      adapt.spacingBefore.bind(adapt)
+    )
+    this.executeSpacingAfter = this.wrap(
+      'executeSpacingAfter',
+      adapt.spacingAfter.bind(adapt)
+    )
+    this.executeIndentLeft = this.wrap(
+      'executeIndentLeft',
+      adapt.indentLeft.bind(adapt)
+    )
+    this.executeIndentRight = this.wrap(
+      'executeIndentRight',
+      adapt.indentRight.bind(adapt)
+    )
+    this.executeIndentFirstLine = this.wrap(
+      'executeIndentFirstLine',
+      adapt.indentFirstLine.bind(adapt)
     )
     // 表格、图片上传、超链接、搜索、打印、图片操作
     this.executeInsertTable = this.wrap(
@@ -324,6 +359,14 @@ export class Command {
     this.executeTableTdBorderType = this.wrap(
       'executeTableTdBorderType',
       adapt.tableTdBorderType.bind(adapt)
+    )
+    this.executeTableTdBorderColor = this.wrap(
+      'executeTableTdBorderColor',
+      adapt.tableTdBorderColor.bind(adapt)
+    )
+    this.executeTableTdBorderWidth = this.wrap(
+      'executeTableTdBorderWidth',
+      adapt.tableTdBorderWidth.bind(adapt)
     )
     this.executeTableTdSlashType = this.wrap(
       'executeTableTdSlashType',
@@ -561,6 +604,10 @@ export class Command {
       'executeUpdateOptions',
       adapt.updateOptions.bind(adapt)
     )
+    this.executeSetBackend = this.wrap(
+      'executeSetBackend',
+      adapt.setBackend.bind(adapt)
+    )
     this.executeInsertTitle = this.wrap(
       'executeInsertTitle',
       adapt.insertTitle.bind(adapt)
@@ -587,8 +634,10 @@ export class Command {
     this.getRangeRow = adapt.getRangeRow.bind(adapt)
     this.getRangeParagraph = adapt.getRangeParagraph.bind(adapt)
     this.executeSetTouchSelectionEnabled = this.wrap('executeSetTouchSelectionEnabled', adapt.setTouchSelectionEnabled.bind(adapt))
-    this.executeSetExternalElementBindings = this.wrap('executeSetExternalElementBindings', adapt.setExternalElementBindings.bind(adapt))
+    this.executeSetExternalElementBindings = this.wrap('executeSetExternalElementBindings', adapt.setLegacyExternalElementBindings.bind(adapt))
     this.getRuntimeElementList = this.wrap('getRuntimeElementList', adapt.getRuntimeElementList.bind(adapt))
+    this.setExternalElementBindings =
+      adapt.setExternalElementBindings.bind(adapt)
     this.getSurroundElementList = adapt.getSurroundElementList.bind(adapt)
     this.getKeywordRangeList = adapt.getKeywordRangeList.bind(adapt)
     this.getKeywordContext = adapt.getKeywordContext.bind(adapt)

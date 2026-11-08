@@ -1,11 +1,13 @@
 import { paragraphRowHeight } from '../../../utils/paragraphLayout'
 import { maxHeightRadioMapping } from '../../../dataset/constant/Common'
 import { EditorZone, PaperDirection } from '../../../dataset/enum/Editor'
+import { ElementType } from '../../../dataset/enum/Element'
 import { DeepRequired } from '../../../interface/Common'
 import { IEditorOption } from '../../../interface/Editor'
 import { IElement, IElementPosition } from '../../../interface/Element'
 import { IRow } from '../../../interface/Row'
 import { Position } from '../../position/Position'
+import type { IRenderContext } from '../../render/model/RenderContext'
 import { Zone } from '../../zone/Zone'
 import { Draw } from '../Draw'
 
@@ -61,6 +63,11 @@ export class Footer {
   ): [IRow[], IElementPosition[]] {
     let layout = this.layoutMap.get(direction)
     if (!layout) {
+      // Root positions and nested table geometry must describe one direction.
+      // Reusing another direction's roots would leave td.positionList stale.
+      if (this.elementList.some(element => element.type === ElementType.TABLE)) {
+        this.layoutMap.clear()
+      }
       const rowList = this._computeRowList(direction)
       // 先登记 rowList，避免位置计算中的高度查询递归触发重复布局
       layout = [rowList, []]
@@ -170,7 +177,7 @@ export class Footer {
     return false
   }
 
-  public render(ctx: CanvasRenderingContext2D, pageNo: number) {
+  public render(ctx: IRenderContext, pageNo: number) {
     if (this.options.footer.disabledPages.includes(pageNo)) return
     ctx.save()
     ctx.globalAlpha = this.zone.isFooterActive()

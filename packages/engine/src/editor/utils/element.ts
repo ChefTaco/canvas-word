@@ -143,7 +143,12 @@ export function formatElementList(
   // 非首字符零宽节点文本元素则补偿-列表元素内部会补偿此处忽略
   if (
     startElement?.type !== ElementType.LIST &&
-    (isForceCompensation ||
+    ((isForceCompensation &&
+      !(
+        editorOptions.preserveLeadingParagraph &&
+        (!startElement?.type || startElement.type === ElementType.TEXT) &&
+        START_LINE_BREAK_REG.test(startElement?.value)
+      )) ||
       (isHandleFirstElement &&
         ((startElement?.type && startElement.type !== ElementType.TEXT) ||
           !START_LINE_BREAK_REG.test(startElement?.value))))
@@ -728,6 +733,13 @@ export function isSameElementExceptValue(
       }
       continue
     }
+    if (
+      key === 'lineHeight' &&
+      source.lineHeight?.rule === target.lineHeight?.rule &&
+      source.lineHeight?.value === target.lineHeight?.value
+    ) {
+      continue
+    }
     if (source[key] !== target[key]) {
       return false
     }
@@ -759,6 +771,7 @@ export function pickElementAttr(
 }
 
 interface IZipElementListOption {
+  preserveLeadingParagraph?: boolean
   extraPickAttrs?: Array<keyof IElement>
   isClassifyArea?: boolean
   isClone?: boolean
@@ -772,7 +785,8 @@ export function zipElementList(
     extraPickAttrs,
     isClassifyArea = false,
     isClone = true,
-    isListValue = false
+    isListValue = false,
+    preserveLeadingParagraph = false
   } = options
   // Work on shallow records while coalescing; only the compact snapshot needs
   // a deep clone. Copy table row/cell arrays before their serialization mutates
@@ -788,6 +802,7 @@ export function zipElementList(
     // 上下文首字符（占位符）-列表首字符要保留避免是复选框
     if (
       e === 0 &&
+      !preserveLeadingParagraph &&
       element.value === ZERO &&
       !element.listId &&
       (!element.type || element.type === ElementType.TEXT)
@@ -1376,7 +1391,9 @@ export function createDomFromElementList(
         tableDom.setAttribute('cellSpacing', '0')
         tableDom.setAttribute('cellpadding', '0')
         tableDom.setAttribute('border', '0')
-        const borderStyle = '1px solid #000000'
+        const borderStyle = `${element.borderWidth ?? 1}px solid ${
+          element.borderColor || editorOptions.table.defaultBorderColor
+        }`
         // 表格边框
         if (!element.borderType || element.borderType === TableBorder.ALL) {
           tableDom.style.borderTop = borderStyle
@@ -1402,25 +1419,35 @@ export function createDomFromElementList(
           trDom.style.height = `${tr.height}px`
           for (let d = 0; d < tr.tdList.length; d++) {
             const tdDom = document.createElement('td')
-            if (!element.borderType || element.borderType === TableBorder.ALL) {
-              tdDom.style.borderBottom = tdDom.style.borderRight = '1px solid'
-            }
             const td = tr.tdList[d]
+            // 单元格单独设置边框颜色/宽度时优先使用
+            const tdBorderStyle =
+              td.borderColor || td.borderWidth
+                ? `${td.borderWidth ?? element.borderWidth ?? 1}px solid ${
+                    td.borderColor ||
+                    element.borderColor ||
+                    editorOptions.table.defaultBorderColor
+                  }`
+                : borderStyle
+            if (!element.borderType || element.borderType === TableBorder.ALL) {
+              tdDom.style.borderBottom = tdDom.style.borderRight =
+                tdBorderStyle
+            }
             tdDom.colSpan = td.colspan
             tdDom.rowSpan = td.rowspan
             tdDom.style.verticalAlign = td.verticalAlign || 'top'
             // 单元格边框
             if (td.borderTypes?.includes(TdBorder.TOP)) {
-              tdDom.style.borderTop = borderStyle
+              tdDom.style.borderTop = tdBorderStyle
             }
             if (td.borderTypes?.includes(TdBorder.RIGHT)) {
-              tdDom.style.borderRight = borderStyle
+              tdDom.style.borderRight = tdBorderStyle
             }
             if (td.borderTypes?.includes(TdBorder.BOTTOM)) {
-              tdDom.style.borderBottom = borderStyle
+              tdDom.style.borderBottom = tdBorderStyle
             }
             if (td.borderTypes?.includes(TdBorder.LEFT)) {
-              tdDom.style.borderLeft = borderStyle
+              tdDom.style.borderLeft = tdBorderStyle
             }
             const childDom = createDomFromElementList(td.value!, options)
             tdDom.innerHTML = childDom.innerHTML

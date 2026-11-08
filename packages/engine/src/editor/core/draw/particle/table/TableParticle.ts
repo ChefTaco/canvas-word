@@ -9,10 +9,11 @@ import { ITd } from '../../../../interface/table/Td'
 import { ITr } from '../../../../interface/table/Tr'
 import { deepClone } from '../../../../utils'
 import { RangeManager } from '../../../range/RangeManager'
+import { IRenderContext } from '../../../render/model/RenderContext'
 import { Draw } from '../../Draw'
 
 interface IDrawTableBorderOption {
-  ctx: CanvasRenderingContext2D
+  ctx: IRenderContext
   startX: number
   startY: number
   width: number
@@ -232,8 +233,8 @@ export class TableParticle {
       if (windowEnd <= windowStart) continue
       drawTdList.push({
         td,
-        offsetY: this.getTdWindowOffsetY(windowStart, fragment),
-        height: (windowEnd - windowStart) * scale,
+        offsetY: this.getTdWindowOffsetY(windowStart, fragment, td),
+        height: this.getTdFragmentHeight(td, element, fragment) * scale,
         isRepeat: false,
         isCarried: td.rowIndex! < startTrIndex
       })
@@ -242,7 +243,7 @@ export class TableParticle {
   }
 
   private _drawSlash(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     drawTd: IFragmentDrawTd,
     startX: number,
     startY: number
@@ -269,7 +270,7 @@ export class TableParticle {
   }
 
   private _drawBorder(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     element: IElement,
     startX: number,
     startY: number,
@@ -322,11 +323,18 @@ export class TableParticle {
       })
     }
     // 渲染单元格
+    // 单独设置边框颜色/宽度的单元格延后绘制，避免共边被默认边框线覆盖
+    const customBorderTdList: IFragmentDrawTd[] = []
     for (const drawTd of drawTdList) {
       const { td, offsetY, height } = drawTd
       // 单元格内斜线
       if (td.slashTypes?.length) {
         this._drawSlash(ctx, drawTd, startX, startY)
+      }
+      // 单元格设置边框颜色/宽度时延后单独绘制
+      if (td.borderColor !== undefined || td.borderWidth !== undefined) {
+        customBorderTdList.push(drawTd)
+        continue
       }
       // 没有设置单元格边框 && 没有设置表格边框则忽略
       if (
@@ -420,11 +428,45 @@ export class TableParticle {
       }
       ctx.translate(-0.5, -0.5)
     }
+    // 绘制单独设置边框颜色/宽度的单元格
+    for (const drawTd of customBorderTdList) {
+      const { td, offsetY, height } = drawTd
+      const width = td.width! * scale
+      const x = Math.round(td.x! * scale + startX + width)
+      const y = Math.round(td.y! * scale + startY + offsetY)
+      ctx.save()
+      ctx.lineWidth = (td.borderWidth ?? borderWidth) * scale
+      ctx.strokeStyle = td.borderColor || borderColor || defaultBorderColor
+      ctx.translate(0.5, 0.5)
+      ctx.beginPath()
+      if (td.borderTypes?.length) {
+        if (td.borderTypes.includes(TdBorder.TOP)) {
+          ctx.moveTo(x - width, y)
+          ctx.lineTo(x, y)
+        }
+        if (td.borderTypes.includes(TdBorder.RIGHT)) {
+          ctx.moveTo(x, y)
+          ctx.lineTo(x, y + height)
+        }
+        if (td.borderTypes.includes(TdBorder.BOTTOM)) {
+          ctx.moveTo(x, y + height)
+          ctx.lineTo(x - width, y + height)
+        }
+        if (td.borderTypes.includes(TdBorder.LEFT)) {
+          ctx.moveTo(x - width, y)
+          ctx.lineTo(x - width, y + height)
+        }
+      } else {
+        ctx.rect(x - width, y, width, height)
+      }
+      ctx.stroke()
+      ctx.restore()
+    }
     ctx.restore()
   }
 
   private _drawBackgroundColor(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     startX: number,
     startY: number,
     drawTdList: IFragmentDrawTd[]
@@ -446,6 +488,55 @@ export class TableParticle {
     return element.colgroup!.reduce((pre, cur) => pre + cur.width, 0)
   }
 
+  /** Constrain a column boundary before mutating any owning cell geometry. */
+  public constrainColResize(
+    element: IElement,
+    index: number,
+    delta: number,
+    isLeftStartBorder = false,
+    minWidth = 20
+  ): number {
+    const { colgroup, trList } = element
+    if (!colgroup?.[index] || !trList || !Number.isFinite(delta)) return 0
+    const coefficient = (column: number) =>
+      column === index
+        ? isLeftStartBorder
+          ? -1
+          : 1
+        : !isLeftStartBorder && column === index + 1
+          ? -1
+          : 0
+    let lower = -Infinity
+    let upper = Infinity
+    const bound = (width: number, minimum: number, change: number) => {
+      if (change > 0) lower = Math.max(lower, (minimum - width) / change)
+      if (change < 0) upper = Math.min(upper, (minimum - width) / change)
+    }
+    for (let c = 0; c < colgroup.length; c++) {
+      bound(
+        colgroup[c].width,
+        Math.min(minWidth, colgroup[c].width),
+        coefficient(c)
+      )
+    }
+    for (const tr of trList) {
+      for (const td of tr.tdList) {
+        if (td.colIndex === undefined) return 0
+        let width = 0
+        let change = 0
+        for (let c = td.colIndex; c < td.colIndex + td.colspan; c++) {
+          const column = colgroup[c]
+          if (!column) return 0
+          width += column.width
+          change += coefficient(c)
+        }
+        const padding = this.draw.getOriginalTdPadding(td)
+        bound(width, Math.min(width, padding[1] + padding[3] + 1), change)
+      }
+    }
+    return lower > upper ? 0 : Math.max(lower, Math.min(delta, upper))
+  }
+
   // 行内拆分行在片段内的可见高度（未缩放；未拆分返回行原始高度）
   public getFragmentTrHeight(
     tr: ITr,
@@ -463,6 +554,14 @@ export class TableParticle {
     ) {
       // 行高可能已被 maxPageNo 截断收缩：拆分高度超出行高时按整行计算
       height -= Math.max(0, tr.height! - fragment.endSplitTrHeight)
+    }
+    // Layout compensation belongs to the first continuation row and last row.
+    if (trIndex === fragment.startTrIndex) height += fragment.leadingHeight || 0
+    if (
+      trIndex === fragment.endTrIndex - 1 &&
+      fragment.layoutHeight !== undefined
+    ) {
+      height += fragment.trailingHeight || 0
     }
     return height
   }
@@ -518,14 +617,20 @@ export class TableParticle {
   // td.y 相对整表，片段内需平移到窗口位置）
   public getTdWindowOffsetY(
     windowStart: number,
-    fragment: ITableRowFragment
+    fragment: ITableRowFragment,
+    td?: ITd
   ): number {
     const { scale } = this.options
+    const leading =
+      td && (td.rowIndex ?? 0) > fragment.startTrIndex
+        ? fragment.leadingHeight || 0
+        : 0
     return (
       (windowStart -
         fragment.skipHeight -
         (fragment.startSplitTrOffset ?? 0) +
-        fragment.repeatHeight) *
+        fragment.repeatHeight +
+        leading) *
       scale
     )
   }
@@ -558,18 +663,7 @@ export class TableParticle {
   ): [number, number] {
     const { scale } = this.options
     const rowList = td.rowList || []
-    // 行高前缀和（含上内边距）：prefix[k] 为第 k 行底（缩放后）
-    let prefix = this.tdLineHeightPrefixCache.get(rowList)
-    if (!prefix) {
-      const {
-        table: { tdPadding }
-      } = this.options
-      prefix = [tdPadding[0] * scale]
-      for (let i = 0; i < rowList.length; i++) {
-        prefix.push(prefix[i] + paragraphRowHeight(rowList[i]))
-      }
-      this.tdLineHeightPrefixCache.set(rowList, prefix)
-    }
+    const prefix = this._getTdLineHeightPrefix(td)
     const topLimit = windowStart * scale
     const limit = windowEnd * scale
     // 二分查找满足 行底(prefix[k]) <= 阈值 的最大行数（行高非负，前缀和单调）
@@ -587,6 +681,123 @@ export class TableParticle {
       return lo
     }
     return [upperBound(topLimit), upperBound(limit)]
+  }
+
+  private _getTdLineHeightPrefix(td: ITd): number[] {
+    const { scale } = this.options
+    const rowList = td.rowList || []
+    // 行高前缀和（含上内边距）：prefix[k] 为第 k 行底（缩放后）
+    let prefix = this.tdLineHeightPrefixCache.get(rowList)
+    if (!prefix) {
+      const tdPadding = this.draw.getOriginalTdPadding(td)
+      prefix = [tdPadding[0] * scale]
+      for (let i = 0; i < rowList.length; i++) {
+        prefix.push(prefix[i] + rowList[i].height + (rowList[i].offsetY || 0))
+      }
+      this.tdLineHeightPrefixCache.set(rowList, prefix)
+    }
+    return prefix
+  }
+
+  public getTdWindowLayoutHeight(td: ITd, start: number, end: number): number {
+    const [first, last] = this.getTdLineRangeBySplitWindow(td, start, end)
+    if (first === last) return 0
+    const prefix = this._getTdLineHeightPrefix(td)
+    const padding = this.draw.getOriginalTdPadding(td)
+    return (
+      padding[0] +
+      padding[2] +
+      (prefix[last] - prefix[first]) / this.options.scale
+    )
+  }
+
+  /** Shorten source ownership to the last row that fits at its rendered origin. */
+  public fitTdWindowEnd(
+    td: ITd,
+    start: number,
+    end: number,
+    available: number
+  ): number {
+    const [first, last] = this.getTdLineRangeBySplitWindow(td, start, end)
+    const prefix = this._getTdLineHeightPrefix(td)
+    const padding = this.draw.getOriginalTdPadding(td)
+    const limit =
+      prefix[first] + (available - padding[0] - padding[2]) * this.options.scale
+    let lo = first
+    let hi = last
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1
+      if (prefix[mid] <= limit + 1e-8) lo = mid
+      else hi = mid - 1
+    }
+    return lo === last ? end : Math.max(start, prefix[lo] / this.options.scale)
+  }
+
+  /** Source windows select rows; compensation changes only fragment geometry. */
+  public computeFragmentLayoutHeight(
+    element: IElement,
+    fragment: ITableRowFragment
+  ): number {
+    const sourceHeight = this.getFragmentContentHeight(element, fragment)
+    const top = fragment.skipHeight + (fragment.startSplitTrOffset || 0)
+    const firstTr = element.trList?.[fragment.startTrIndex]
+    if (!firstTr) return sourceHeight
+    const firstBottom = fragment.skipHeight + firstTr.height
+    const tdList = this.getFragmentTdList(element, fragment)
+    let leading = 0
+    if (
+      fragment.endTrIndex > fragment.startTrIndex + 1 ||
+      fragment.endSplitTrHeight === undefined
+    ) {
+      for (const td of tdList) {
+        if ((td.rowIndex ?? 0) > fragment.startTrIndex) continue
+        const start = Math.max(0, top - (td.y || 0))
+        const end = Math.min(td.height || 0, firstBottom - (td.y || 0))
+        if (end <= start) continue
+        leading = Math.max(
+          leading,
+          this.getTdWindowLayoutHeight(td, start, end) - (firstBottom - top)
+        )
+      }
+    }
+    fragment.leadingHeight = leading
+    let height = sourceHeight + leading
+    for (const td of tdList) {
+      const [start, end] = this.getTdWindowInFragment(td, element, fragment)
+      if (end <= start) continue
+      const offset =
+        Math.max(0, (td.y || 0) - top) +
+        ((td.rowIndex ?? 0) > fragment.startTrIndex ? leading : 0)
+      height = Math.max(
+        height,
+        offset + this.getTdWindowLayoutHeight(td, start, end)
+      )
+    }
+    fragment.trailingHeight = height - sourceHeight - leading
+    fragment.layoutHeight = height
+    return height
+  }
+
+  public getTdFragmentHeight(
+    td: ITd,
+    element: IElement,
+    fragment: ITableRowFragment
+  ): number {
+    const [start, end] = this.getTdWindowInFragment(td, element, fragment)
+    let height = end - start
+    const top = fragment.skipHeight + (fragment.startSplitTrOffset || 0)
+    const bottom = top + this.getFragmentContentHeight(element, fragment)
+    const firstBottom =
+      fragment.skipHeight +
+      (element.trList?.[fragment.startTrIndex]?.height || 0)
+    if (
+      (td.rowIndex ?? 0) <= fragment.startTrIndex &&
+      (td.y || 0) + end >= firstBottom - 1e-8
+    )
+      height += fragment.leadingHeight || 0
+    if ((td.y || 0) + end >= bottom - 1e-8)
+      height += fragment.trailingHeight || 0
+    return height
   }
 
   public getTableHeight(element: IElement): number {
@@ -741,7 +952,7 @@ export class TableParticle {
   }
 
   public drawRange(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     element: IElement,
     startX: number,
     startY: number,
@@ -795,7 +1006,7 @@ export class TableParticle {
   }
 
   public render(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     element: IElement,
     startX: number,
     startY: number,

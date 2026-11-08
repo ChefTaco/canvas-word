@@ -18,6 +18,7 @@ import {
 } from '../../interface/Range'
 import { getAnchorElement, isElementTraceDeleted } from '../../utils/element'
 import { Draw } from '../draw/Draw'
+import type { IRenderContext } from '../render/model/RenderContext'
 import { EventBus } from '../event/eventbus/EventBus'
 import { HistoryManager } from '../history/HistoryManager'
 import { Listener } from '../listener/Listener'
@@ -424,10 +425,11 @@ export class RangeManager {
     startTdIndex?: number,
     endTdIndex?: number,
     startTrIndex?: number,
-    endTrIndex?: number
+    endTrIndex?: number,
+    forceChange = false
   ) {
     // 判断光标是否改变
-    const isChange = this.getIsRangeChange(
+    const isChange = forceChange || this.getIsRangeChange(
       startIndex,
       endIndex,
       tableId,
@@ -460,10 +462,14 @@ export class RangeManager {
       const element = elementList[startIndex]
       if (element?.controlId) {
         control.initControl()
-        return
+        // Keep existing control event behavior for ordinary range commands.
+        if (!forceChange) return
+      } else {
+        control.destroyControl()
       }
+    } else {
+      control.destroyControl()
     }
-    control.destroyControl()
     // 抛出选区变化事件
     if (isChange && this.eventBus.isSubscribe('rangeChange')) {
       this.eventBus.emit('rangeChange', this.range)
@@ -529,6 +535,11 @@ export class RangeManager {
     const highlight = curElement.highlight || null
     const rowFlex = curElement.rowFlex || null
     const rowMargin = curElement.rowMargin ?? this.options.defaultRowMargin
+    const spacingBefore = curElement.spacingBefore ?? 0
+    const spacingAfter = curElement.spacingAfter ?? 0
+    const indentLeft = curElement.indentLeft ?? 0
+    const indentRight = curElement.indentRight ?? 0
+    const indentFirstLine = curElement.indentFirstLine ?? 0
     const dashArray = curElement.dashArray || []
     const level = curElement.level || null
     const listType = curElement.listType || null
@@ -557,6 +568,11 @@ export class RangeManager {
       highlight,
       rowFlex,
       rowMargin,
+      spacingBefore,
+      spacingAfter,
+      indentLeft,
+      indentRight,
+      indentFirstLine,
       dashArray,
       level,
       listType,
@@ -599,6 +615,11 @@ export class RangeManager {
       highlight: null,
       rowFlex: null,
       rowMargin,
+      spacingBefore: 0,
+      spacingAfter: 0,
+      indentLeft: 0,
+      indentRight: 0,
+      indentFirstLine: 0,
       dashArray: [],
       level: null,
       listType: null,
@@ -707,7 +728,7 @@ export class RangeManager {
   }
 
   public render(
-    ctx: CanvasRenderingContext2D,
+    ctx: IRenderContext,
     x: number,
     y: number,
     width: number,

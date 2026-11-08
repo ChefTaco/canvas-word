@@ -15,7 +15,21 @@ export const EDITOR_ELEMENT_STYLE_ATTR: Array<keyof IElement> = [
   'textDecoration'
 ]
 
-export const EDITOR_ROW_ATTR: Array<keyof IElement> = ['rowFlex', 'rowMargin', 'paragraphLayout']
+export const EDITOR_ROW_ATTR: Array<keyof IElement> = [
+  'rowFlex',
+  'rowMargin',
+  'paragraphLayout',
+  'spacingBefore',
+  'lineHeight',
+  'keepTogether',
+  'keepWithNext',
+  'widowControl',
+  'pageBreakBefore',
+  'spacingAfter',
+  'indentLeft',
+  'indentRight',
+  'indentFirstLine'
+]
 
 export const EDITOR_TRACE_ATTR: Array<keyof IElement> = ['trace']
 
@@ -26,6 +40,16 @@ export const EDITOR_ELEMENT_PARAGRAPH_STYLE_ATTR: Array<keyof IElement> = [
   'rowMargin',
   'paragraphLayout',
   'paragraphBreak',
+  'spacingBefore',
+  'lineHeight',
+  'keepTogether',
+  'keepWithNext',
+  'widowControl',
+  'pageBreakBefore',
+  'spacingAfter',
+  'indentLeft',
+  'indentRight',
+  'indentFirstLine',
   'level',
   'title'
 ]
@@ -51,6 +75,16 @@ export const EDITOR_ELEMENT_COPY_ATTR: Array<keyof IElement> = [
   'groupIds',
   'rowMargin',
   'paragraphLayout',
+  'spacingBefore',
+  'lineHeight',
+  'keepTogether',
+  'keepWithNext',
+  'widowControl',
+  'pageBreakBefore',
+  'spacingAfter',
+  'indentLeft',
+  'indentRight',
+  'indentFirstLine',
   'textDecoration'
 ]
 
@@ -68,6 +102,16 @@ export const EDITOR_ELEMENT_ZIP_ATTR: Array<keyof IElement> = [
   'rowMargin',
   'paragraphLayout',
   'paragraphBreak',
+  'spacingBefore',
+  'lineHeight',
+  'keepTogether',
+  'keepWithNext',
+  'widowControl',
+  'pageBreakBefore',
+  'spacingAfter',
+  'indentLeft',
+  'indentRight',
+  'indentFirstLine',
   'dashArray',
   'trList',
   'tableToolDisabled',
@@ -118,6 +162,9 @@ export const TABLE_TD_ZIP_ATTR: Array<keyof ITd> = [
   'externalId',
   'verticalAlign',
   'backgroundColor',
+  'padding',
+  'borderColor',
+  'borderWidth',
   'borderTypes',
   'slashTypes',
   'disabled',

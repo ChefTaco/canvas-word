@@ -1,0 +1,66 @@
+import 'vitest-canvas-mock'
+import { afterAll, afterEach, vi } from 'vitest'
+
+// jsdom 缺失补齐
+class StubResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+class StubIntersectionObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+  takeRecords(): unknown[] {
+    return []
+  }
+  root: Element | null = null
+  rootMargin = ''
+  thresholds: ReadonlyArray<number> = []
+}
+;(globalThis as any).ResizeObserver ??= StubResizeObserver
+;(globalThis as any).IntersectionObserver ??= StubIntersectionObserver
+;(Element.prototype as any).scrollIntoView ??= () => {}
+;(Element.prototype as any).scroll ??= () => {}
+;(SVGElement.prototype as any).getBBox ??= () => ({
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0
+})
+;(window as any).matchMedia = (query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener: () => {},
+  removeListener: () => {},
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  dispatchEvent: () => false
+})
+
+// 同步 Worker 替身: 仅满足 new Worker(url) 不抛错
+class StubWorker {
+  onmessage: ((this: Worker, ev: MessageEvent) => any) | null = null
+  onerror: ((this: AbstractWorker, ev: ErrorEvent) => any) | null = null
+  postMessage(): void {}
+  terminate(): void {}
+  addEventListener(): void {}
+  removeEventListener(): void {}
+  dispatchEvent(): boolean {
+    return false
+  }
+}
+;(globalThis as any).Worker ??= StubWorker
+
+// 防止 fakeTimers 泄漏
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+// Direct Draw fixtures can leave the native debounced visibility observer queued.
+// Let its final observation settle before jsdom removes document and window.
+afterAll(async () => {
+  vi.useRealTimers()
+  await new Promise(resolve => setTimeout(resolve, 200))
+})

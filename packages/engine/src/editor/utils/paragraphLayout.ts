@@ -2,7 +2,7 @@ import { IRow } from '../interface/Row'
 
 /** Layout height is distinct from painted glyph/highlight height. */
 export const paragraphRowHeight = (row: IRow) =>
-  row.height + (row.offsetY || 0) + (row.spacingAfter || 0)
+  row.height + (row.offsetY || 0) + (row.spacingIncluded ? 0 : row.spacingAfter || 0)
 
 /** Keep this paragraph and at least the next line together when they fit on an
  * empty page. Long paragraphs retain ordinary wrapping instead of blank pages. */

@@ -11,9 +11,11 @@ import {
   ISearchResult,
   ISearchResultRestArgs
 } from '../../../interface/Search'
-import { getUUID, indexOf, isNumber } from '../../../utils'
+import { getUUID, indexOf, isNumber, splitText } from '../../../utils'
+import { getSearchTextBoundaries } from '../../../utils/searchTextBoundaries'
 import { Position } from '../../position/Position'
 import { RangeManager } from '../../range/RangeManager'
+import type { IRenderContext } from '../../render/model/RenderContext'
 import { Draw } from '../Draw'
 
 export interface INavigateInfo {
@@ -215,9 +217,10 @@ export class Search {
     let i = 0
     let elementIndex = 0
     while (elementIndex < originalElementListLength) {
-      const endIndex = i < tableIndexList.length
-        ? tableIndexList[i]
-        : originalElementListLength
+      const endIndex =
+        i < tableIndexList.length
+          ? tableIndexList[i]
+          : originalElementListLength
       const pageElement = originalElementList.slice(elementIndex, endIndex)
       if (pageElement.length) {
         elementListGroup.push({
@@ -246,32 +249,42 @@ export class Search {
       restArgs?: ISearchResultRestArgs
     ) {
       if (!payload) return
-      // Search offsets are UTF-16; rendered element indices are graphemes.
-      // Retain exact boundaries, including case-fold expansions and empty items.
+      // Search uses UTF-16 offsets; runtime elements are graphemes. Preserve
+      // complete boundaries, including empty items and case expansions.
       const starts = new Map<number, number>()
       const ends = new Map<number, number>()
       const searchable: boolean[] = []
-      let text = ''
-      for (let elementIndex = 0; elementIndex < elementList.length; elementIndex++) {
-        const e = elementList[elementIndex]
+      const fragments: string[] = []
+      let offset = 0
+      for (let index = 0; index < elementList.length; index++) {
+        const element = elementList[index]
         const isText =
-          !e.type ||
-          (TEXTLIKE_ELEMENT_TYPE.includes(e.type) &&
-            e.controlComponent !== ControlComponent.CHECKBOX &&
-            e.controlComponent !== ControlComponent.RADIO &&
-            !e.hide &&
-            !e.control?.hide &&
-            !e.area?.hide &&
-            !traceParticle.isTraceHidden(e))
+          (!element.type || TEXTLIKE_ELEMENT_TYPE.includes(element.type)) &&
+          element.controlComponent !== ControlComponent.CHECKBOX &&
+          element.controlComponent !== ControlComponent.RADIO &&
+          !element.hide &&
+          !element.control?.hide &&
+          !element.area?.hide &&
+          !traceParticle.isTraceHidden(element) &&
+          element.value !== ZERO
         searchable.push(isText)
-        const value = isText ? e.value : ZERO
-        const fragment = isIgnoreCase ? value.toLocaleLowerCase() : value
-        if (fragment) {
-          starts.set(text.length, elementIndex)
-          text += fragment
-          ends.set(text.length, elementIndex)
+        const value = isText ? element.value : ZERO
+        fragments.push(value)
+        const length = (isIgnoreCase ? value.toLocaleLowerCase() : value).length
+        if (length) {
+          starts.set(offset, index)
+          offset += length
+          ends.set(offset, index)
         }
       }
+      const source = fragments.join('')
+      // Fold the whole string to retain contextual lowercase forms (Greek
+      // final sigma). Reject uncertain offset maps rather than misselect text.
+      const text = isIgnoreCase ? source.toLocaleLowerCase() : source
+      if (text.length !== offset) return
+      // A formatting boundary may divide one grapheme across runtime elements.
+      // Validate the concatenated source as well as element boundaries.
+      const graphemeBoundaries = getSearchTextBoundaries(text)
       // 匹配的结果列表
       const matchList: { index: number; length: number }[] = []
       // 从索引0开始依次匹配
@@ -290,9 +303,14 @@ export class Search {
         const { index: startIndex, length: matchLength } = matchList[m]
         const first = starts.get(startIndex)
         const last = ends.get(startIndex + matchLength)
-        // A partial grapheme match cannot be selected or replaced safely.
-        if (first === undefined || last === undefined ||
-            searchable.slice(first, last + 1).some(value => !value)) continue
+        if (
+          first === undefined ||
+          last === undefined ||
+          !graphemeBoundaries.has(startIndex) ||
+          !graphemeBoundaries.has(startIndex + matchLength) ||
+          searchable.slice(first, last + 1).some(value => !value)
+        )
+          continue
         const groupId = getUUID()
         for (let i = first; i <= last; i++) {
           const index = i + (restArgs?.startIndex || 0)
@@ -355,7 +373,7 @@ export class Search {
     }
   }
 
-  public render(ctx: CanvasRenderingContext2D, pageIndex: number) {
+  public render(ctx: IRenderContext, pageIndex: number) {
     if (
       !this.searchMatchList ||
       !this.searchMatchList.length ||
@@ -427,6 +445,7 @@ export class Search {
       matchList = matchGroup[replaceIndex]
     }
     if (!matchList?.length) return
+    const replacement = splitText(payload)
     const isDesignMode = this.draw.isDesignMode()
     if (!this.draw.getOptions().trace.disabled) {
       this.replaceWithTrace(payload, matchList)
@@ -482,8 +501,8 @@ export class Search {
         if (!~firstMatchIndex) {
           firstMatchIndex = m
         }
-        for (let p = 0; p < payload.length; p++) {
-          const value = payload[p]
+        for (let p = 0; p < replacement.length; p++) {
+          const value = replacement[p]
           if (p === 0) {
             tableElement.value = value
           } else {
@@ -525,8 +544,8 @@ export class Search {
           pageDiffCount--
           continue
         }
-        for (let p = 0; p < payload.length; p++) {
-          const value = payload[p]
+        for (let p = 0; p < replacement.length; p++) {
+          const value = replacement[p]
           if (p === 0) {
             element.value = value
           } else {
@@ -545,7 +564,7 @@ export class Search {
     if (!~firstMatchIndex) return
     // 定位-首个被匹配关键词后
     const firstMatch = matchList[firstMatchIndex]
-    const firstIndex = firstMatch.index + (payload.length - 1)
+    const firstIndex = firstMatch.index + (replacement.length - 1)
     if (firstMatch.type === EditorContext.TABLE) {
       const { tableIndex, trIndex, tdIndex, index } = firstMatch
       const element =
@@ -622,7 +641,7 @@ export class Search {
       if (!sourceElement) continue
       const replaceIndex = targetElementList.indexOf(sourceElement, startIndex)
       if (payload) {
-        const insertElementList = payload.split('').map(value => {
+        const insertElementList = splitText(payload).map(value => {
           const element: IElement = {
             ...sourceElement,
             value
@@ -640,7 +659,7 @@ export class Search {
       }
       firstReplacedMatch = firstMatch
       firstReplacedIndex = payload
-        ? replaceIndex + payload.length - 1
+        ? replaceIndex + splitText(payload).length - 1
         : Math.max(replaceIndex - 1, 0)
     }
     if (!firstReplacedMatch) return

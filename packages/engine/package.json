@@ -1,6 +1,6 @@
 {
   "name": "@hivemagnus/canvas-word-engine",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Canvas-based Word-style document editor engine (maintained MIT fork of canvas-editor) with stable serialized element identities",
   "keywords": [
     "canvas-editor",
@@ -31,7 +31,11 @@
       "types": "./dist/types/index.d.ts",
       "default": "./dist/canvas-word-engine.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./testing": {
+      "types": "./dist/types/testing.d.ts",
+      "default": "./dist/canvas-word-engine.js"
+    }
   },
   "publishConfig": {
     "access": "public"
@@ -47,7 +51,7 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node scripts/finalize-types.mjs && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --project unit",
+    "test": "vitest run --project unit --project upstream",
     "test:browser": "vitest run --project browser"
   },
   "devDependencies": {

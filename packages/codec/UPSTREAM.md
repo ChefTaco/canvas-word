@@ -9,7 +9,7 @@ codec. The upstream MIT license and copyright are retained in [LICENSE](LICENSE)
 | Upstream repository | <https://github.com/Hufe921/canvas-editor-plugin> (`packages/docx`) |
 | Fork base | `@hufe921/canvas-editor-plugin-docx` 1.0.0, commit `4741a9f8885d57fde1704d39a7aa930aeadc51e6` |
 | Current upstream snapshot | plugin monorepo commit `0e8a1b36c8e94061edc19ce05b93c12fbad03b34` (includes merged optional-download PR 45) |
-| This package | 1.0.0 (versions restart at 1.0.0 for the public package) |
+| This package | 1.0.1 |
 
 The repository keeps both upstream snapshots as provenance (they are not
 published or built):
@@ -59,6 +59,16 @@ used. The fork uses bounded XML/ZIP parsers (`@xmldom/xmldom`, `saxes`,
 | page-field-cache-and-ambiguous-review | Map footer PAGE fields (including cached results and split instructions) to the page counter without keeping cached text; reject ambiguous run property revisions. | `test/headless.test.js` | Not submitted |
 | stable-story-round-trip (1.0.0) | A footer paragraph that held only the page counter is not imported as story text, and an exported footer adds an empty paragraph only when it has no content, so header/footer stories no longer grow on each export/import cycle. | `test/roundtrip-corpus.test.ts` | Not submitted |
 | esm-package (1.0.0) | Published as an ES module with declarations and an `exports` map; `validateDocument` and `documentSchema` are exported. | `scripts/check-package.mjs` | Packaging only |
+
+## CommonJS compatibility (1.0.1)
+
+The same runtime is emitted as ESM and CommonJS, selected by the package export
+map. Both entries expose the same version and pass an installed-package DOCX
+round trip. This lets existing CommonJS applications adopt the shared package
+without maintaining a separate source fork. `themeColorTransform` is exported
+for synthetic theme regression fixtures. No conversion behavior changes.
+Tests: `scripts/check-package.mjs` and the existing codec corpus.
+Upstream status: packaging only; not submitted.
 
 ## Maintenance
 

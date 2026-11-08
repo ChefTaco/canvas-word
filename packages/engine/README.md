@@ -65,6 +65,13 @@ Elements accept an optional `paragraphLayout` (`before`, `after`, `indent`,
 `firstLineIndent`, `keepWithNext`, `pageBreakBefore`) and `paragraphBreak: false`
 for soft line breaks.
 
+Version 1.1.0 also includes the preserved atomic binding/selection, exact nested
+range restoration, mixed-direction story table, explicit line-height, table
+padding/row-keep and paragraph-flow APIs. See [UPSTREAM.md](UPSTREAM.md) for exact
+contribution heads, capability limits and validation. The original
+`executeSetExternalElementBindings` and `paragraphLayout` contracts remain available.
+Diagnostic fixtures may import `./testing` to exercise the installed bundle.
+
 The rest of the API (commands, events, options, plugins) is upstream
 canvas-editor's; see its [documentation](https://hufe.club/canvas-editor-docs/).
 

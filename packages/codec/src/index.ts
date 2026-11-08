@@ -4,9 +4,10 @@ export * from './export.js';
 export * from './import.js';
 export * from './packageValidation.js';
 export * from './zipArchive.js';
-export const CODEC_VERSION='1.0.0';
+export const CODEC_VERSION='1.0.1';
 export * from './sections.js';
 
 export * from './stories.js';
 export * from './styles.js';
 export { validateDocument, documentSchema } from './validation.js';
+export { themeColorTransform } from './theme.js';

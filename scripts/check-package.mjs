@@ -29,7 +29,7 @@ const packages = [
   {
     dir: 'packages/codec',
     tarball: /^hivemagnus-canvas-word-codec-\d[\w.-]*\.tgz$/,
-    allowed: [/^dist\/[\w.-]+\.(?:js|d\.ts)$/, /^(?:LICENSE|NOTICES\.md|UPSTREAM\.md|README\.md|package\.json)$/],
+    allowed: [/^dist\/[\w.-]+\.(?:js|d\.ts)$/, /^dist\/cjs\/[\w.-]+\.(?:js|d\.ts|json)$/,  /^(?:LICENSE|NOTICES\.md|UPSTREAM\.md|README\.md|package\.json)$/],
     required: ['dist/index.js', 'dist/index.d.ts', 'LICENSE', 'NOTICES.md', 'UPSTREAM.md', 'README.md'],
   },
 ];
@@ -103,6 +103,17 @@ try {
     console.log(CODEC_VERSION);
   `);
   const codecVersion = (await run(process.execPath, ['codec.mjs'], { cwd: install })).trim();
+  await writeFile(join(install, 'codec.cjs'), `
+    const { CODEC_VERSION, defaultLayout, exportDocx, importDocx } = require('@hivemagnus/canvas-word-codec');
+    (async () => {
+      const document = { schemaVersion: 1, changes: [], comments: [], layout: defaultLayout(), blocks: [{ type: 'paragraph', id: 'p', style: {}, runs: [{ id: 'r', text: 'CommonJS', style: {} }] }] };
+      const back = await importDocx(await exportDocx(document, 'final'));
+      if (back.document.blocks[0].runs[0].text !== 'CommonJS') throw new Error('CommonJS round trip failed');
+      console.log(CODEC_VERSION);
+    })().catch(error => { console.error(error); process.exitCode = 1; });
+  `);
+  const commonjsVersion = (await run(process.execPath, ['codec.cjs'], { cwd: install })).trim();
+  if (commonjsVersion !== codecVersion) throw new Error('Codec module versions differ');
 
   // Engine: browser-only, so check that the export map resolves and that both packages'
   // published declarations type-check for a NodeNext consumer without skipLibCheck.

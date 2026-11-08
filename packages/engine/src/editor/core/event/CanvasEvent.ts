@@ -20,6 +20,7 @@ import click, { getWordRangeBySegmenter } from './handlers/click'
 import composition from './handlers/composition'
 import drag from './handlers/drag'
 import { ICopyOption } from '../../interface/Event'
+import type { RenderPage } from '../render/RenderBackend'
 
 export interface ICompositionInfo {
   elementList: IElement[]
@@ -52,7 +53,7 @@ export class CanvasEvent {
   } | null = null
   private draw: Draw
   private pageContainer: HTMLDivElement
-  private pageList: HTMLCanvasElement[]
+  private pageList: RenderPage[]
   private range: RangeManager
   private position: Position
 

@@ -117,6 +117,9 @@ export class Position {
   public getTablePositionList(
     sourceElementList: IElement[]
   ): IElementPosition[] {
+    // Another visible page may have laid out the shared story in a different
+    // direction. Restore its active-page geometry before reading a nested td.
+    if (!this.draw.getZone().isMainActive()) this.getOriginalPositionList()
     return (
       this.getTableTdByContext(sourceElementList, this.positionContext)
         ?.positionList || []
@@ -378,15 +381,14 @@ export class Position {
       zone,
       tablePosition
     } = payload
-    const {
-      scale,
-      table: { tdPadding }
-    } = this.options
+    const { scale } = this.options
     let x = startX
     let y = startY
     let index = startIndex
     const traceParticle = this.draw.getTraceParticle()
-    const columnLayout = this.draw.getColumnLayout()
+    const columnLayout = this.draw.getColumnLayout(
+      this.draw.getPageDirection(pageNo)
+    )
     let prevColumnIndex: number | undefined = undefined
     for (let i = 0; i < rowList.length; i++) {
       const curRow = rowList[i]
@@ -452,6 +454,9 @@ export class Position {
         if (element.translateX) {
           x += element.translateX * scale
         }
+        const positionHeight = curRow.paragraphLayout && curRow.spacingIncluded
+          ? curRow.height - (curRow.spacingAfter || 0)
+          : curRow.height
         const positionItem: IElementPosition = {
           pageNo,
           index,
@@ -463,15 +468,15 @@ export class Position {
           metrics,
           left: element.left || 0,
           ascent: offsetY,
-          lineHeight: curRow.height,
+          lineHeight: positionHeight,
           isFirstLetter: j === 0,
           isLastLetter: j === curRow.elementList.length - 1,
           columnIndex: curRow.columnIndex,
           coordinate: {
             leftTop: [x, y],
-            leftBottom: [x, y + curRow.height],
+            leftBottom: [x, y + positionHeight],
             rightTop: [x + metrics.width, y],
-            rightBottom: [x + metrics.width, y + curRow.height]
+            rightBottom: [x + metrics.width, y + positionHeight]
           }
         }
         // 缓存浮动元素信息
@@ -535,7 +540,6 @@ export class Position {
           !element.hide &&
           !traceParticle.isTraceHidden(element)
         ) {
-          const tdPaddingWidth = tdPadding[1] + tdPadding[3]
           // 遍历片段范围行与进位合并单元格，按窗口计算位置（跨页按页累积）
           const fragmentTdList = tableFragment
             ? this.draw
@@ -543,6 +547,8 @@ export class Position {
                 .getFragmentTdList(element, tableFragment)
             : element.trList!.flatMap(tr => tr.tdList)
           for (const td of fragmentTdList) {
+            const tdPadding = this.draw.getOriginalTdPadding(td)
+            const tdPaddingWidth = tdPadding[1] + tdPadding[3]
             let isSplitWindow = false
             let isContinuation = false
             let windowStart = 0
@@ -576,7 +582,7 @@ export class Position {
             const drawnOffsetY = tableFragment
               ? this.draw
                   .getTableParticle()
-                  .getTdWindowOffsetY(windowStart, tableFragment)
+                  .getTdWindowOffsetY(windowStart, tableFragment, td)
               : 0
             const drawRowResult = this.computePageRowPosition({
               positionList: tdPositionList,
@@ -612,6 +618,8 @@ export class Position {
               const tr = element.trList![trIndex]
               for (let d = 0; d < tr.tdList.length; d++) {
                 const td = tr.tdList[d]
+                const tdPadding = this.draw.getOriginalTdPadding(td)
+                const tdPaddingWidth = tdPadding[1] + tdPadding[3]
                 const positionList: IElementPosition[] = []
                 this.computePageRowPosition({
                   positionList,
@@ -644,7 +652,7 @@ export class Position {
         }
       }
       x = startX
-      y += curRow.height + (curRow.spacingAfter || 0)
+      y += curRow.height
     }
     return { x, y, index }
   }
@@ -660,12 +668,13 @@ export class Position {
     ) {
       return
     }
-    const {
-      scale,
-      table: { tdPadding }
-    } = this.options
+    const { scale } = this.options
+    const tdPadding = this.draw.getOriginalTdPadding(td)
     const tdPaddingHeight = tdPadding[0] + tdPadding[2]
-    const rowsHeight = td.rowList!.reduce((pre, cur) => pre + paragraphRowHeight(cur), 0)
+    const rowsHeight = td.rowList!.reduce(
+      (pre, cur) => pre + cur.height + (cur.offsetY || 0),
+      0
+    )
     const blankHeight = (td.height! - tdPaddingHeight) * scale - rowsHeight
     const offsetHeight =
       td.verticalAlign === VerticalAlign.MIDDLE ? blankHeight / 2 : blankHeight
@@ -725,7 +734,15 @@ export class Position {
     }
     for (let i = startPageNo; i < pageRowList.length; i++) {
       const rowList = pageRowList[i]
-      if (!rowList?.length) continue
+      if (!rowList?.length) {
+        // 空白页（区域补高跨页延续页）同样占位，保持页位置缓存与页码对齐
+        this.pagePositionCacheList.push({
+          positionList: [],
+          floatPositionList: [],
+          tablePagingPositionList: []
+        })
+        continue
+      }
       const startIndex = rowList[0].startIndex
       const { margins, innerWidth } = this.draw.getPageSize(i)
       const startX = margins[3]
@@ -794,10 +811,11 @@ export class Position {
   }
 
   // 根据 x 坐标推断点击位置所属的分栏索引；无分栏布局时返回 undefined
-  private _getColumnIndexByX(x: number): number | undefined {
-    const layout = this.draw.getColumnLayout()
+  private _getColumnIndexByX(x: number, pageNo: number): number | undefined {
+    const direction = this.draw.getPageDirection(pageNo)
+    const layout = this.draw.getColumnLayout(direction)
     if (!layout) return
-    const startX = this.draw.getMargins()[3]
+    const startX = this.draw.getMargins(direction)[3]
     const xRel = x - startX
     // 栏范围 [colStart, nextColStart)，gap 算入左侧栏，避免点击栏间空白时误判
     for (let i = 0; i < layout.count; i++) {
@@ -841,8 +859,15 @@ export class Position {
         const tdTop =
           tablePosition.coordinate.leftTop[1] +
           td.y! * scale +
-          this.draw.getTableParticle().getTdWindowOffsetY(windowStart, fragment)
-        const tdBottom = tdTop + (windowEnd - windowStart) * scale
+          this.draw
+            .getTableParticle()
+            .getTdWindowOffsetY(windowStart, fragment, td)
+        const tdBottom =
+          tdTop +
+          this.draw
+            .getTableParticle()
+            .getTdFragmentHeight(td, element, fragment) *
+            scale
         if (y < tdTop || y > tdBottom) continue
       }
       const childPosition = this.getPositionByXY({
@@ -1119,7 +1144,7 @@ export class Position {
       ? positionList.filter(p => p.isLastLetter && p.pageNo === positionNo)
       : positionList.filter(p => p.isLastLetter)
     // 分栏场景下，只保留与点击栏一致的行，避免误命中同 y 的其他栏
-    const clickColumnIndex = this._getColumnIndexByX(x)
+    const clickColumnIndex = this._getColumnIndexByX(x, curPageNo)
     const lastLetterList =
       clickColumnIndex === undefined
         ? matchedLastLetterList
@@ -1127,13 +1152,17 @@ export class Position {
             p =>
               p.columnIndex === undefined || clickColumnIndex === p.columnIndex
           )
+    const zoneRowList = this.draw.getOriginalRowList()
     for (let j = 0; j < lastLetterList.length; j++) {
       const {
         index,
         rowNo,
+        rowIndex,
         coordinate: { leftTop, leftBottom }
       } = lastLetterList[j]
-      if (y > leftTop[1] && y <= leftBottom[1]) {
+      // 段前间距等行偏移区域（行内容上方offsetY空白）归属当前行
+      const rowOffsetY = zoneRowList[rowIndex]?.offsetY || 0
+      if (y > leftTop[1] - rowOffsetY && y <= leftBottom[1]) {
         const headIndex = isMainActive
           ? positionList.findIndex(
               p => p.pageNo === positionNo && p.rowNo === rowNo
@@ -1141,12 +1170,13 @@ export class Position {
           : positionList.findIndex(p => p.rowNo === rowNo)
         const headElement = elementList[headIndex]
         const headPosition = positionList[headIndex]
-        // 是否在头部
+        // 是否在头部（点击行内容上方空白视为点击行首）
+        const isHitOffsetArea = y <= leftTop[1]
         const headStartX =
           headElement.listStyle === ListStyle.CHECKBOX
             ? this.draw.getMargins()[3]
             : headPosition.coordinate.leftTop[0]
-        if (x < headStartX) {
+        if (isHitOffsetArea || x < headStartX) {
           // 头部元素为空元素时无需选中
           if (~headIndex) {
             if (headPosition.value === ZERO) {

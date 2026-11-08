@@ -8,10 +8,10 @@ license and copyright are retained in [LICENSE](LICENSE).
 | | |
 | --- | --- |
 | Upstream repository | <https://github.com/Hufe921/canvas-editor> |
-| Upstream source pin | commit `71aa0996c2d4c827ec5d86d9acee80eb0a3f98a4` (merge of [PR 1492](https://github.com/Hufe921/canvas-editor/pull/1492), October 12, 2026) |
+| Upstream source pin | commit `948e6ac583f63efc48403e2a63a32456ee9c274c`, plus the six exact contribution heads listed below |
 | Closest published upstream | `@hufe921/canvas-editor` 1.0.5, base commit `f8435acb98badcc831174055e9001d42fe51bb0f` |
 | Original fork base | 1.0.4, commit `9af964c2f920da1fcc7d541fae4ab781fcd3bf02` |
-| This package | 1.0.0 (versions restart at 1.0.0 for the public package) |
+| This package | 1.1.0 |
 
 The source pin includes merged PR 1492, which is not yet verified in a published
 upstream package. The complete runtime source delta from the 1.0.4 base is
@@ -23,6 +23,42 @@ The runtime has no third-party package dependencies. Build tooling (TypeScript,
 Vite/Rolldown, Vitest) is development-only; see [NOTICES.md](NOTICES.md) for the
 two build helpers embedded in the bundle. Upstream source keeps its original
 formatting (including its Chinese comments).
+
+## Preserved contributions (1.1.0)
+
+The following contributions were closed without merging when their source fork
+was deleted. This package ports their final submitted changes and regression
+fixtures; it does not claim that the contributions were accepted upstream.
+
+| PR | Final submitted commit | Retained behavior |
+| --- | --- | --- |
+| [1495](https://github.com/Hufe921/canvas-editor/pull/1495) | `6d7d1e2f0cf3690547fd57e191e36c805f325b63` | Atomic external bindings, atomic replacement and exact Unicode selection |
+| [1496](https://github.com/Hufe921/canvas-editor/pull/1496) | `03a8142224596b4aadb11159a5ae9120a2f075e2` | Validated nested range restoration and element rectangles |
+| [1505](https://github.com/Hufe921/canvas-editor/pull/1505) | `3674cc71f402998ba7fe73553092de61d843532e` | Header/footer table geometry across portrait and landscape pages |
+| [1506](https://github.com/Hufe921/canvas-editor/pull/1506) | `a6a27023ce69d5a73aa0cb7ea05d08b991e24dad` | Explicit paragraph line heights, leading paragraphs and column geometry |
+| [1508](https://github.com/Hufe921/canvas-editor/pull/1508) | `f96d3d58d942ecb825dba6031cbcbe8fb3c85296` | Cell padding, kept table rows, continuation sizing and bounded resizing |
+| [1509](https://github.com/Hufe921/canvas-editor/pull/1509) | `580a705ed3d6eda071203350d2aae6fcd5bf0831` | Opt-in paragraph keeps, widow control and explicit paragraph page breaks |
+
+PR 1508 includes PR 1506; PR 1509 includes both. Their changes are integrated once.
+The shared upstream layout engine and optional SVG backend are retained. Existing
+identity, image-source, literal zero-width-space, touch, caret and paragraph-layout
+patches remain supported. The earlier glyph-ID binding command is retained as
+`executeSetExternalElementBindings`; the new ownership-path API is
+`setExternalElementBindings`. Legacy paragraph metadata maps to the common row
+computation without changing serialized document properties. Selection rectangles
+exclude its trailing paragraph spacing.
+
+Validation lives in `test/upstream/`, the existing fork tests and
+`test/browser/contributions.test.ts`. The browser suite runs the retained
+paragraph, table and flow probes on Canvas and SVG at their specified zooms.
+The upstream spellcheck demo is outside the runtime package; object identity
+regressions use the existing assertions adapted for persistent glyph IDs.
+Native device, actual screen-reader and application release acceptance remain
+separate from these package checks.
+
+The `./testing` export supplies diagnostic hooks from the same runtime bundle.
+Applications use the main entry; integration fixtures can exercise the installed
+package without reaching into a second source checkout.
 
 ## Fork changes
 

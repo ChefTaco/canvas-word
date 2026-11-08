@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TextMeasurer } from '../editor/core/layout/TextMeasurer';
 import { TextParticle } from '../editor/core/draw/particle/TextParticle';
 import type { Draw } from '../editor/core/draw/Draw';
 
@@ -24,6 +25,7 @@ describe('font basis metrics', () => {
     const particle = new TextParticle({
       getOptions: () => ({}),
       getCtx: () => ctx,
+      getTextMeasurer: () => new TextMeasurer(ctx),
     } as unknown as Draw);
     const first = particle.measureBasisWord(ctx, '16px Georgia');
     for (let i = 0; i < 100; i++)

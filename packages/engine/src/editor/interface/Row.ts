@@ -23,15 +23,31 @@ export interface IRow {
   rowFlex?: RowFlex
   startIndex: number
   isPageBreak?: boolean
+  paginationBreakBefore?: boolean
   // 分页符行携带的后续页纸张方向（排版期从分页符元素拷贝）
   paperDirection?: PaperDirection
   isList?: boolean
   listIndex?: number
   offsetX?: number
   offsetY?: number
-  spacingAfter?: number
   paragraphLayout?: IParagraphLayout
   paragraphStart?: boolean
+  // 段后间距（已计入height，绘制选区等视觉效果时需剔除）
+  spacingAfter?: number
+  /** True when spacingAfter is already included in measured height. */
+  spacingIncluded?: boolean
+  // 区域最小高度补高（已计入height，绘制选区等视觉效果时需剔除；
+  // 分页溢出时截断至页底，height为本页内部分）
+  areaPadding?: {
+    areaId: string
+    height: number
+  }
+  // 区域补高的跨页结转：位于区域后续行时已计入其offsetY（占位空间视觉上归属区域）；
+  // 位于区域末行自身时（区域在文档末尾）剩余补高以空白页延续
+  areaPaddingCarry?: {
+    areaId: string
+    height: number
+  }
   elementList: IRowElement[]
   isWidthNotEnough?: boolean
   rowIndex: number

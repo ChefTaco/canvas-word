@@ -12,6 +12,8 @@ export interface IPageVisibleInfo {
 }
 
 export class ScrollObserver {
+  private destroyed = false
+  private initialTimer: ReturnType<typeof setTimeout>
   private draw: Draw
   private options: Required<IEditorOption>
   private scrollContainer: Element | Document
@@ -21,8 +23,8 @@ export class ScrollObserver {
     this.options = draw.getOptions()
     this.scrollContainer = this.getScrollContainer()
     // 监听滚轮
-    setTimeout(() => {
-      if (!window.scrollY) {
+    this.initialTimer = setTimeout(() => {
+      if (!this.destroyed && !window.scrollY) {
         this._observer()
       }
     })
@@ -40,6 +42,8 @@ export class ScrollObserver {
   }
 
   public removeEvent() {
+    this.destroyed = true
+    clearTimeout(this.initialTimer)
     this.scrollContainer.removeEventListener('scroll', this._observer)
   }
 
@@ -81,6 +85,7 @@ export class ScrollObserver {
   }
 
   private _observer = debounce(() => {
+    if (this.destroyed) return
     const { intersectionPageNo, visiblePageNoList } = this.getPageVisibleInfo()
     this.draw.setIntersectionPageNo(intersectionPageNo)
     this.draw.setVisiblePageNoList(visiblePageNoList)

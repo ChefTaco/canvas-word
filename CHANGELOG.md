@@ -3,6 +3,22 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
+## @hivemagnus/canvas-word-engine 1.1.0
+
+- Preserve the final submitted changes and tests from editor PRs 1495, 1496,
+  1505, 1506, 1508 and 1509, including atomic bindings, exact selection recovery,
+  mixed-direction story geometry, line heights, cell padding and paragraph flow.
+- Retain the shared layout engine and Canvas/SVG rendering backends.
+- Preserve the existing binding command, paragraph metadata, identity, resource
+  policy, literal zero-width-space and input behavior.
+- Add a diagnostic `./testing` export for installed-package integration fixtures.
+- Exercise retained browser regressions on both rendering backends.
+
+## @hivemagnus/canvas-word-codec 1.0.1
+
+- Add a CommonJS entry alongside ESM, with installed-package round-trip checks.
+- Export the theme color helper for regression fixtures; conversion behavior is unchanged.
+
 ## @hivemagnus/canvas-word-codec 1.0.0
 
 First public release of the maintained headless DOCX codec fork (see

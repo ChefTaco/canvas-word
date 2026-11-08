@@ -1,3 +1,8 @@
+import type { ILineHeight } from './interface/LineHeight'
+import type {
+  IExternalElementBinding,
+  IExternalElementContainer
+} from './interface/ExternalBinding'
 import './assets/css/index.css'
 import { version } from '../../package.json'
 import { IEditorData, IEditorOption, IEditorResult } from './interface/Editor'
@@ -9,6 +14,7 @@ import { Listener } from './core/listener/Listener'
 import { RowFlex } from './dataset/enum/Row'
 import {
   FlexDirection,
+  CheckboxMarkType,
   ImageDisplay,
   LocationPosition,
   SurroundPosition
@@ -22,6 +28,7 @@ import {
   IRegisterContextMenu
 } from './interface/contextmenu/ContextMenu'
 import {
+  BackendType,
   EditorComponent,
   EditorZone,
   EditorMode,
@@ -60,7 +67,7 @@ import { IRangeStyle } from './interface/Listener'
 import { Override } from './core/override/Override'
 import { LETTER_CLASS } from './dataset/constant/Common'
 import { INTERNAL_CONTEXT_MENU_KEY } from './dataset/constant/ContextMenu'
-import { IRange, RangeRect } from './interface/Range'
+import { IRange, RangeRect, ILocatedRange, ILocatedElementRect } from './interface/Range'
 import { deepClone, splitText } from './utils'
 import {
   createDomFromElementList,
@@ -79,6 +86,14 @@ import { INTERNAL_SHORTCUT_KEY } from './dataset/constant/Shortcut'
 import { IGraffitiData } from './interface/Graffiti'
 
 export default class Editor {
+  /** Feature negotiation for clients supplying opt-in layout properties. */
+  public static readonly layoutCapabilities = [
+    'paragraph-line-height-v1',
+    'leading-paragraph-v1',
+    'table-cell-padding-v1',
+    'table-row-keep-v1',
+    'paragraph-flow-v1'
+  ] as const
   public command: Command
   public version: string
   public listener: Listener
@@ -199,6 +214,7 @@ export {
   EditorComponent,
   PageMode,
   RenderMode,
+  BackendType,
   ImageDisplay,
   Command,
   KeyMap,
@@ -225,12 +241,14 @@ export {
   AreaMode,
   ControlState,
   FlexDirection,
+  CheckboxMarkType,
   WatermarkType,
   WatermarkLayer
 }
 
 // 对外类型
 export type {
+  ILineHeight,
   IElement,
   IEditorData,
   IEditorOption,
@@ -244,8 +262,12 @@ export type {
   ICatalog,
   ICatalogItem,
   IRange,
+  ILocatedRange,
+  ILocatedElementRect,
   IRangeStyle,
   RangeRect,
   IBadge,
-  IGetElementListByHTMLOption
+  IGetElementListByHTMLOption,
+  IExternalElementBinding,
+  IExternalElementContainer
 }
