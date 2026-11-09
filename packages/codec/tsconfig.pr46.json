@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "declaration": false,
+    "rootDir": ".",
+    "outDir": "output/pr46"
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/pr46/**/*.ts"
+  ]
+}

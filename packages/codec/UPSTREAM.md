@@ -9,7 +9,7 @@ codec. The upstream MIT license and copyright are retained in [LICENSE](LICENSE)
 | Upstream repository | <https://github.com/Hufe921/canvas-editor-plugin> (`packages/docx`) |
 | Fork base | `@hufe921/canvas-editor-plugin-docx` 1.0.0, commit `4741a9f8885d57fde1704d39a7aa930aeadc51e6` |
 | Current upstream snapshot | plugin monorepo commit `0e8a1b36c8e94061edc19ce05b93c12fbad03b34` (includes merged optional-download PR 45) |
-| This package | 1.0.1 |
+| Current source candidate | 1.1.0 (unreleased) |
 
 The repository keeps both upstream snapshots as provenance (they are not
 published or built):
@@ -59,6 +59,22 @@ used. The fork uses bounded XML/ZIP parsers (`@xmldom/xmldom`, `saxes`,
 | page-field-cache-and-ambiguous-review | Map footer PAGE fields (including cached results and split instructions) to the page counter without keeping cached text; reject ambiguous run property revisions. | `test/headless.test.js` | Not submitted |
 | stable-story-round-trip (1.0.0) | A footer paragraph that held only the page counter is not imported as story text, and an exported footer adds an empty paragraph only when it has no content, so header/footer stories no longer grow on each export/import cycle. | `test/roundtrip-corpus.test.ts` | Not submitted |
 | esm-package (1.0.0) | Published as an ES module with declarations and an `exports` map; `validateDocument` and `documentSchema` are exported. | `scripts/check-package.mjs` | Packaging only |
+
+## Full-fidelity exchange entry (1.1.0, unreleased)
+
+The `./exchange` entry preserves the final submitted headless Word exchange
+proposal, PR 46 at `d72a090d2967016fe1930ce57bc50bcb4615cff1`. It carries
+embedded font bytes and bindings, nested table blocks and presentation, section
+columns, dynamic PAGE fields, resolved defaults, typography and exact native
+review snapshots, with explicit unsupported-list and underline diagnostics.
+The proposal is still open; this does not claim upstream acceptance.
+
+This entry has a richer exchange model than the original root API. Keeping it
+explicit preserves the root API's established decoded model and round-trip
+behavior. Both entries are headless, application-neutral and available as ESM
+and CommonJS. Applications own resource approval and persistence; no resource is
+installed or fetched by the codec. The 35 retained independent OOXML tests live
+in `test/pr46/`; the existing 53-case root API corpus remains unchanged.
 
 ## CommonJS compatibility (1.0.1)
 

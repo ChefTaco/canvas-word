@@ -29,7 +29,7 @@ const packages = [
   {
     dir: 'packages/codec',
     tarball: /^hivemagnus-canvas-word-codec-\d[\w.-]*\.tgz$/,
-    allowed: [/^dist\/[\w.-]+\.(?:js|d\.ts)$/, /^dist\/cjs\/[\w.-]+\.(?:js|d\.ts|json)$/,  /^(?:LICENSE|NOTICES\.md|UPSTREAM\.md|README\.md|package\.json)$/],
+    allowed: [/^dist\/(?:exchange\/)?[\w.-]+\.(?:js|d\.ts)$/, /^dist\/cjs\/(?:exchange\/)?[\w.-]+\.(?:js|d\.ts|json)$/,  /^(?:LICENSE|NOTICES\.md|UPSTREAM\.md|README\.md|package\.json)$/],
     required: ['dist/index.js', 'dist/index.d.ts', 'LICENSE', 'NOTICES.md', 'UPSTREAM.md', 'README.md'],
   },
 ];
@@ -114,6 +114,15 @@ try {
   `);
   const commonjsVersion = (await run(process.execPath, ['codec.cjs'], { cwd: install })).trim();
   if (commonjsVersion !== codecVersion) throw new Error('Codec module versions differ');
+  await writeFile(join(install, 'exchange.mjs'), `
+    import { CODEC_VERSION, defaultLayout, exportDocx, importDocx } from '@hivemagnus/canvas-word-codec/exchange';
+    const document = { schemaVersion: 1, changes: [], comments: [], layout: defaultLayout(), blocks: [{ type: 'paragraph', id: 'p', style: { keepTogether: true }, runs: [{ id: 'r', text: 'Exchange', style: { smallCaps: true } }] }] };
+    const converted = await importDocx(await exportDocx(document, 'final'));
+    if (converted.document.blocks[0].runs[0].text !== 'Exchange' || !converted.document.blocks[0].runs[0].style.smallCaps || !Array.isArray(converted.fonts)) throw new Error('Exchange round trip failed');
+    console.log(CODEC_VERSION);
+  `);
+  if ((await run(process.execPath, ['exchange.mjs'], { cwd: install })).trim() !== codecVersion) throw new Error('Exchange API version differs');
+  await run(process.execPath, ['-e', "const api = require('@hivemagnus/canvas-word-codec/exchange'); if (typeof api.importDocx !== 'function') throw new Error('Missing CommonJS exchange entry')"], { cwd: install });
 
   // Engine: browser-only, so check that the export map resolves and that both packages'
   // published declarations type-check for a NodeNext consumer without skipLibCheck.

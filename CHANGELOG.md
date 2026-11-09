@@ -3,6 +3,14 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
+## @hivemagnus/canvas-word-codec 1.1.0 (unreleased)
+
+- Add the explicit `./exchange` API with the final PR 46 source and 35 retained
+  regressions: embedded fonts, nested table presentation, sections, typography,
+  native review snapshots and unsupported-feature diagnostics.
+- Preserve the established root API and its 53-case round-trip/rejection corpus.
+- Emit declarations and ESM/CommonJS entries for both exchange models.
+
 ## @hivemagnus/canvas-word-engine 1.1.0
 
 - Preserve the final submitted changes and tests from editor PRs 1495, 1496,

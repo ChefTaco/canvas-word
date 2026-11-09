@@ -4,7 +4,7 @@ export * from './export.js';
 export * from './import.js';
 export * from './packageValidation.js';
 export * from './zipArchive.js';
-export const CODEC_VERSION='1.0.1';
+export const CODEC_VERSION='1.1.0';
 export * from './sections.js';
 
 export * from './stories.js';

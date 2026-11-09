@@ -1,6 +1,6 @@
 {
   "name": "@hivemagnus/canvas-word-codec",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Headless DOCX codec: Word bytes to and from a neutral exchange document (maintained MIT fork of the canvas-editor DOCX plugin)",
   "keywords": [
     "docx",
@@ -31,7 +31,12 @@
       "import": "./dist/index.js",
       "require": "./dist/cjs/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./exchange": {
+      "types": "./dist/exchange/index.d.ts",
+      "import": "./dist/exchange/index.js",
+      "require": "./dist/cjs/exchange/index.js"
+    }
   },
   "engines": {
     "node": "^24.22.1 || ^26.13.0"
@@ -49,7 +54,7 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && tsc -p tsconfig.cjs.json && node -e \"require('node:fs').writeFileSync('dist/cjs/package.json', JSON.stringify({type:'commonjs'}))\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run --exclude 'test/pr46/**' && tsc -p tsconfig.pr46.json && node --test output/pr46/test/pr46/*.test.js"
   },
   "dependencies": {
     "@xmldom/xmldom": "0.9.12",
