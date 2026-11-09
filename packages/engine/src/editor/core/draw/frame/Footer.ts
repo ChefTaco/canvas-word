@@ -1,4 +1,5 @@
 import { paragraphRowHeight } from '../../../utils/paragraphLayout'
+import { SectionStories } from './SectionStories'
 import { maxHeightRadioMapping } from '../../../dataset/constant/Common'
 import { EditorZone, PaperDirection } from '../../../dataset/enum/Editor'
 import { ElementType } from '../../../dataset/enum/Element'
@@ -17,6 +18,7 @@ export class Footer {
   private zone: Zone
   private options: DeepRequired<IEditorOption>
 
+  private stories: SectionStories
   private elementList: IElement[]
   private layoutMap: Map<PaperDirection, [IRow[], IElementPosition[]]>
 
@@ -27,35 +29,44 @@ export class Footer {
     this.options = draw.getOptions()
 
     this.elementList = data || []
+    this.stories = new SectionStories(draw, EditorZone.FOOTER, () => this.elementList)
     this.layoutMap = new Map()
   }
 
   public getRowList(): IRow[] {
+    if (this.stories.enabled()) return this.stories.rows()
     return this._getLayoutByDirection(this.options.paperDirection)[0]
   }
 
   public setElementList(elementList: IElement[]) {
     this.elementList = elementList
+    this.stories.clear()
   }
 
+  public getAllElementList(): IElement[] { return this.elementList }
+
   public getElementList(): IElement[] {
+    if (this.stories.enabled()) return this.stories.elements()
     return this.elementList
   }
 
   public getPositionList(
     direction = this.options.paperDirection
   ): IElementPosition[] {
+    if (this.stories.enabled()) return this.stories.positions(direction)
     return this._getLayoutByDirection(direction)[1]
   }
 
   public compute() {
     this.recovery()
+    if (this.stories.enabled()) return
     // 主方向立即计算，其余方向按需懒计算
     this._getLayoutByDirection(this.options.paperDirection)
   }
 
   public recovery() {
     this.layoutMap.clear()
+    this.stories.clear()
   }
 
   private _getLayoutByDirection(
@@ -130,6 +141,7 @@ export class Footer {
   }
 
   public getHeight(pageNo?: number, direction?: PaperDirection): number {
+    if (this.stories.enabled()) return this.stories.height(pageNo, direction)
     if (this.isDisabled(pageNo)) return 0
     const curDirection = this._resolveDirection(pageNo, direction)
     const maxHeight = this.getMaxHeight(curDirection)
@@ -138,13 +150,15 @@ export class Footer {
   }
 
   public getRowHeight(direction = this.options.paperDirection): number {
+    if (this.stories.enabled()) return this.stories.height(this.draw.getPageNo(), direction)
     return this._getLayoutByDirection(direction)[0].reduce(
       (pre, cur) => pre + paragraphRowHeight(cur),
       0
     )
   }
 
-  public getExtraHeight(pageNo?: number, direction?: PaperDirection): number {
+  public getExtraHeight(pageNo?: number, direction?: PaperDirection, sectionId?: string): number {
+    if (this.stories.enabled()) return this.stories.extra(pageNo, direction, sectionId)
     const curDirection = this._resolveDirection(pageNo, direction)
     // 页脚下边距 + 实际高 - 页面下边距
     const margins = this.draw.getMargins(curDirection)
@@ -178,6 +192,7 @@ export class Footer {
   }
 
   public render(ctx: IRenderContext, pageNo: number) {
+    if (this.stories.enabled()) { this.stories.render(ctx, pageNo); return }
     if (this.options.footer.disabledPages.includes(pageNo)) return
     ctx.save()
     ctx.globalAlpha = this.zone.isFooterActive()

@@ -329,6 +329,7 @@ export class CommandAdapt {
     this.draw.render({ curIndex: input.startIndex === input.endIndex
       ? input.startIndex : undefined, isCompute: false,
       isSubmitHistory: false, isSetCursor: input.startIndex === input.endIndex })
+    if (input.focus) this.draw.getCursor().focus()
   }
 
   public getLocatedElementRects(input: ILocatedRange): ILocatedElementRect[] {

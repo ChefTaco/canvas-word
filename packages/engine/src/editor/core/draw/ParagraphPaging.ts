@@ -31,7 +31,8 @@ export class ParagraphPaging {
 
   constructor(
     private readonly rows: IRow[],
-    isHidden: (element: IElement) => boolean
+    isHidden: (element: IElement) => boolean,
+    allowObjectTargets = false
   ) {
     const paragraphs: Paragraph[] = []
     const owners: Array<Paragraph | undefined> = []
@@ -54,7 +55,7 @@ export class ParagraphPaging {
         current = undefined
         continue
       }
-      if (!current || (first.value === ZERO && !first.listWrap)) {
+      if (!current || (first.value === ZERO && !first.listWrap && !first.hardBreak)) {
         current = { start: i, end: i + 1, style: first }
         paragraphs.push(current)
       } else current.end = i + 1
@@ -77,11 +78,11 @@ export class ParagraphPaging {
     const effective = paragraphs.filter(
       p => displayed[p.end] > displayed[p.start]
     )
-    const add = (start: number, end: number, fresh: boolean) => {
+    const add = (start: number, end: number, fresh: boolean, height?: number) => {
       const group = {
         start,
         end,
-        height: this.prefix[end] - this.prefix[start],
+        height: height ?? this.prefix[end] - this.prefix[start],
         fresh
       }
       for (let i = start; i < end; i++) this.groups[i].push(group)
@@ -102,19 +103,15 @@ export class ParagraphPaging {
         }
       }
     }
-    for (let i = 0; i < effective.length; i++) {
-      const paragraph = effective[i]
-      if (!paragraph.style.keepWithNext) continue
-      const followingIndex = nextVisible[paragraph.end]
-      const following = rows[followingIndex]
-      if (
-        following &&
-        !following.isPageBreak &&
-        (!effective[i + 1] || owners[followingIndex] !== effective[i + 1])
-      ) {
-        throw new Error(
-          'Keeping text with a following object is not supported.'
-        )
+    for (const paragraph of effective) {
+      const next = nextVisible[paragraph.end]
+      if (paragraph.style.keepWithNext && rows[next] && !rows[next].isPageBreak && !owners[next]) {
+        if (!allowObjectTargets) throw new Error('Keeping text with a following object is not supported.')
+        const table = rows[next].elementList[0]
+        const first = table.trList?.[0]
+        const fraction = first && (table.height ?? 0) > 0 ? first.height / (table.height ?? 1) : 1
+        add(paragraph.start, next + 1, true,
+          this.prefix[next] - this.prefix[paragraph.start] + rows[next].height * fraction + (rows[next].offsetY ?? 0))
       }
     }
     for (let i = 0; i < effective.length; i++) {
@@ -128,7 +125,21 @@ export class ParagraphPaging {
         !effective[last + 1].style.pageBreakBefore
       )
         last++
-      if (last > i) add(first.start, effective[last].end, true)
+      if (last > i) {
+        if (!allowObjectTargets) add(first.start, effective[last].end, true)
+        else for (let current = i; current < last; current++) {
+          const before = effective[current], after = effective[current + 1]
+          const visibleBefore = Array.from({length: before.end-before.start}, (_,offset)=>before.start+offset)
+            .filter(index=>displayed[index+1]>displayed[index])
+          const visibleAfter = Array.from({length: after.end-after.start}, (_,offset)=>after.start+offset)
+            .filter(index=>displayed[index+1]>displayed[index])
+          const begin = before.style.keepTogether ? before.start :
+            visibleBefore[Math.max(0,visibleBefore.length-(before.style.widowControl?2:1))] ?? before.start
+          const end = after.style.keepTogether ? after.end :
+            (visibleAfter[Math.min(visibleAfter.length-1,after.style.widowControl?1:0)] ?? after.start) + 1
+          add(begin,end,true)
+        }
+      }
       i = last
     }
   }
@@ -146,7 +157,7 @@ export class ParagraphPaging {
     let fresh = false
     for (const group of this.groups[index]) {
       if (group.height <= emptyHeight + 1e-8)
-        height = Math.max(height, this.prefix[group.end] - this.prefix[index])
+        height = Math.max(height, group.height - (this.prefix[index] - this.prefix[group.start]))
       else if (group.fresh && index === group.start) fresh = true
     }
     return { height, fresh }

@@ -10,6 +10,7 @@ import { ITd } from '../../../../interface/table/Td'
 import { Draw } from '../../Draw'
 import { TableParticle } from './TableParticle'
 import { ParagraphPaging } from '../../ParagraphPaging'
+import type { ISectionPageConfig } from '../../../layout/ContinuousSections'
 
 // 表格分页：跨页表格在渲染层的行拆分（分页/分栏片段计算）
 // 与 maxPageNo 截断裁剪。数据层始终保持单一表格
@@ -26,7 +27,7 @@ export class TablePaging {
 
   // 表格跨页时在渲染层拆分行：数据层始终保持单一表格，
   // 仅将跨页表格的行记录拆分为按页片段（超高单元格按内容行行内拆分）
-  public splitTableRowAcrossPages(rowList: IRow[]): IRow[] {
+  public splitTableRowAcrossPages(rowList: IRow[], section?: ISectionPageConfig): IRow[] {
     const { scale } = this.options
     const isHidden = (element: IElement) =>
       !this.draw.isDesignMode() &&
@@ -36,19 +37,32 @@ export class TablePaging {
         (element.area?.hide && !this.draw.isAreaHideDisabled()) ||
         this.draw.getTraceParticle().isTraceHidden(element)
       )
-    const paragraphs = new ParagraphPaging(rowList, isHidden)
+    const paragraphs = new ParagraphPaging(rowList, isHidden, Boolean(section))
     // 分栏布局：行落位以（页码, 栏索引）槽位推进，与 _computePageList 规则一致
     const columnLayout = this.draw.getColumnLayout(this.options.paperDirection)
-    const columnCount = columnLayout?.count || 1
+    const columnCount = section?.count ?? columnLayout?.count ?? 1
     const isColumnEnabled = columnCount > 1
     // 分页结果尚未生成，按分页符跟踪方向
     let curDirection = this.options.paperDirection
-    let curPageLimit = this.draw.getHeight(curDirection)
-    let pageNo = 0
+    let pageNo = section?.pageNo ?? 0
+    const slotTop = (page: number) => section?.bounds(page).top ??
+      this.draw.getMainOuterHeight(page, curDirection)
+    const slotBottom = (page: number) => section?.bounds(page).bottom ??
+      this.draw.getHeight(curDirection)
+    let curPageLimit = slotBottom(pageNo)
     let currentColumn = 0
     // 与 _computePageList 保持一致的页面填充累计语义
-    let pageHeight = this.draw.getMainOuterHeight(0, curDirection)
+    let pageHeight = slotTop(pageNo)
     const newRowList: IRow[] = []
+    const place = (row: IRow, page: number, column: number, y: number) => {
+      if (section) row.sectionPlacement = {
+        pageNo: page, x: column * (section.width + section.gap), y,
+        width: section.width, bandTop: section.bounds(page).top,
+        bandBottom: section.bounds(page).bottom, column, count: columnCount,
+        gap: section.gap
+      }
+      newRowList.push(row)
+    }
     // 是否已发生表格拆分（之后行的栏索引需按实际填充重新推导）
     let hasSplitTable = false
     let hasFlowRepacked = false
@@ -80,7 +94,8 @@ export class TablePaging {
           pageNo++
           currentColumn = 0
         }
-        pageHeight = this.draw.getMainOuterHeight(pageNo, curDirection)
+        pageHeight = slotTop(pageNo)
+        curPageLimit = slotBottom(pageNo)
       }
       // 非表格行透传（与 _computePageList 一致：显式换栏重置页高，溢出换槽）
       const passThrough = () => {
@@ -93,17 +108,18 @@ export class TablePaging {
           !hasFlowRepacked
         ) {
           currentColumn = row.columnIndex
-          pageHeight = this.draw.getMainOuterHeight(pageNo, curDirection)
+          pageHeight = slotTop(pageNo)
         }
-        const slotTop = this.draw.getMainOuterHeight(pageNo, curDirection)
-        const occupied = pageHeight > slotTop + 1e-8
+        const currentTop = slotTop(pageNo)
+        const occupied = pageHeight > currentTop + 1e-8
         const nextPage =
           isColumnEnabled && currentColumn < columnCount - 1
             ? pageNo
             : pageNo + 1
         const nextEmpty =
-          curPageLimit - this.draw.getMainOuterHeight(nextPage, curDirection)
-        const emptyHeight = Math.max(curPageLimit - slotTop, nextEmpty)
+          curPageLimit - slotTop(nextPage)
+        const full = section?.fullBounds(pageNo + 1)
+        const emptyHeight = Math.max(curPageLimit - currentTop, nextEmpty, full ? full.bottom-full.top : 0)
         const reservation = paragraphs.required(i, emptyHeight)
         reservation.height += carriedOffsetY
         const grouped =
@@ -118,11 +134,12 @@ export class TablePaging {
             'Paragraph flow cannot fit alongside carried area padding.'
           )
         }
-        const legacyBreak = paragraphBreakBefore(rowList, i, pageHeight, curPageLimit, slotTop, occupied, scale)
+        const legacyBreak = paragraphBreakBefore(rowList, i, pageHeight, curPageLimit, slotTop(pageNo), occupied, scale)
         const legacyPageBreak = occupied && !!row.paragraphStart && !!row.paragraphLayout?.pageBreakBefore
-        const explicit = (paragraphs.before(i) && (occupied || currentColumn > 0)) || legacyPageBreak
+        const earlierBand = section && currentTop > section.fullBounds(pageNo).top + 1e-8
+        const explicit = (paragraphs.before(i) && (occupied || currentColumn > 0 || Boolean(earlierBand))) || legacyPageBreak
         const keep =
-          occupied &&
+          (occupied || Boolean(section && grouped && pageHeight + reservation.height > curPageLimit + 1e-8)) &&
           (reservation.fresh ||
             (grouped && pageHeight + reservation.height > curPageLimit + 1e-8) || legacyBreak)
         const overflow = row.height + rowOffsetY + pageHeight > curPageLimit
@@ -139,7 +156,7 @@ export class TablePaging {
           pendingAreaCarry = row.height + rowOffsetY + pageHeight - curPageLimit
           if (isColumnEnabled) row.columnIndex = currentColumn
           pageHeight = curPageLimit
-          newRowList.push(row)
+          place(row, pageNo, currentColumn, curPageLimit - row.height - rowOffsetY)
           return
         }
         if (
@@ -150,7 +167,7 @@ export class TablePaging {
         ) {
           if (preBreakDirection) {
             curDirection = preBreakDirection
-            curPageLimit = this.draw.getHeight(curDirection)
+            curPageLimit = slotBottom(pageNo)
           }
           const oldPage = pageNo
           if (keep || explicit) hasFlowRepacked = true
@@ -158,10 +175,18 @@ export class TablePaging {
           if (paragraphs.active && pageNo !== oldPage && (keep || explicit))
             row.paginationBreakBefore = true
         }
+        if (section) {
+          // A fresh column below an earlier band is not an empty page. Do not
+          // relax feasible keeps merely because that short band is unoccupied.
+          const required = Math.max(row.height + rowOffsetY, grouped ? reservation.height : 0)
+          let skipped = 0
+          while (pageHeight + required > curPageLimit + 1e-8 &&
+            required <= emptyHeight + 1e-8 && skipped++ <= columnCount + 1) advanceSlot()
+        }
         // 拆分后行的栏索引按实际填充重新推导
         if (isColumnEnabled) row.columnIndex = currentColumn
         pageHeight += row.height + rowOffsetY
-        newRowList.push(row)
+        place(row, pageNo, currentColumn, pageHeight - row.height - rowOffsetY)
       }
       const isHiddenTable =
         element?.type === ElementType.TABLE && isHidden(element)
@@ -200,12 +225,10 @@ export class TablePaging {
       ) => {
         const tr = trList?.[trIndex]
         if (!tr) return false
+        const full = section?.fullBounds(targetPage + 1)
         const emptyHeight =
-          (curPageLimit -
-            this.draw.getMainOuterHeight(targetPage, curDirection) -
-            rowMarginHeight) /
-            scale -
-          repeatHeight
+          (Math.max(curPageLimit - slotTop(targetPage), full ? full.bottom-full.top : 0) -
+            rowMarginHeight) / scale - repeatHeight
         // Oversized rows must still progress, as in Word's cantSplit behavior.
         return (
           (!tr.keepTogether || tr.height > emptyHeight + 1e-8) &&
@@ -340,14 +363,13 @@ export class TablePaging {
           fragPageNo++
           fragColumn = 0
         }
-        fragPageHeight =
-          this.draw.getMainOuterHeight(fragPageNo, curDirection) +
-          carriedOffsetY
+        curPageLimit = slotBottom(fragPageNo)
+        fragPageHeight = slotTop(fragPageNo) + carriedOffsetY
       }
       if (isPrePageBreak) {
         if (preBreakDirection) {
           curDirection = preBreakDirection
-          curPageLimit = this.draw.getHeight(curDirection)
+          curPageLimit = slotBottom(pageNo)
         }
         advanceFragSlot(true)
       } else if (
@@ -388,6 +410,13 @@ export class TablePaging {
           advanceFragSlot()
         }
       }
+      if (section && trList?.[0]?.keepTogether) {
+        const required = trList[0].height * scale + rowMarginHeight
+        const full = section.fullBounds(fragPageNo + 1)
+        let skipped = 0
+        while (fragPageHeight + required > curPageLimit + 1e-8 &&
+          required <= full.bottom-full.top + 1e-8 && skipped++ <= columnCount + 1) advanceFragSlot()
+      }
       // 整表未超出当前页时不拆分
       const tableHeight = element.height! * scale
       if (fragPageHeight + rowMarginHeight + tableHeight <= curPageLimit) {
@@ -401,6 +430,8 @@ export class TablePaging {
         startSplitTrOffset?: number
         endSplitTrHeight?: number
         columnIndex?: number
+        pageNo: number
+        y: number
       }[] = []
       let start = 0
       // 当前起始行在之前页已消耗的高度（未缩放）
@@ -409,6 +440,9 @@ export class TablePaging {
       let slotPageNo = fragPageNo
       let slotColumn = fragColumn
       let cutPageHeight = fragPageHeight
+      const pushFragment = (fragment: Omit<(typeof fragments)[number], 'pageNo' | 'y'>) => {
+        fragments.push({...fragment, pageNo: slotPageNo, y: cutPageHeight})
+      }
       const repeatTrIndexes: number[] = []
       let repeatHeight = 0
       let isSplitAborted = false
@@ -423,7 +457,8 @@ export class TablePaging {
             slotPageNo++
             slotColumn = 0
           }
-          cutPageHeight = this.draw.getMainOuterHeight(slotPageNo, curDirection)
+          curPageLimit = slotBottom(slotPageNo)
+          cutPageHeight = slotTop(slotPageNo)
           if (fragments.length === 1) {
             // 续页回显表头：首页片段范围内的分页重复行
             for (let r = 0; r < fragments[0].endTrIndex; r++) {
@@ -446,6 +481,18 @@ export class TablePaging {
               repeatTrIndexes.length = 0
               repeatHeight = 0
             }
+          }
+        }
+        if (section && pendingOffset === 0 && trList?.[start]?.keepTogether) {
+          const required = trList[start].height * scale + rowMarginHeight +
+            (isFirstFragment ? 0 : repeatHeight * scale)
+          const full = section.fullBounds(slotPageNo + 1)
+          let skipped = 0
+          while (cutPageHeight + required > curPageLimit + 1e-8 &&
+            required <= full.bottom-full.top + 1e-8 && skipped++ <= columnCount + 1) {
+            if (isColumnEnabled && slotColumn < columnCount-1) slotColumn++
+            else { slotPageNo++; slotColumn=0 }
+            curPageLimit=slotBottom(slotPageNo);cutPageHeight=slotTop(slotPageNo)
           }
         }
         const reserved =
@@ -511,7 +558,7 @@ export class TablePaging {
               // An indivisible object taller than an empty slot cannot be
               // split. Retain the existing overflow fallback, never resize it
               // or discard already prepared fragments (including maxPageNo).
-              fragments.push({
+              pushFragment({
                 startTrIndex: start,
                 endTrIndex: trList!.length,
                 startSplitTrOffset: pendingOffset,
@@ -519,7 +566,7 @@ export class TablePaging {
               })
               break
             }
-            fragments.push({
+            pushFragment({
               startTrIndex: start,
               endTrIndex: start + 1,
               startSplitTrOffset: pendingOffset,
@@ -601,7 +648,7 @@ export class TablePaging {
           isSplitAborted = true
           break
         }
-        fragments.push({
+        pushFragment({
           startTrIndex: start,
           endTrIndex: endSplitTrHeight !== undefined ? end + 1 : end,
           startSplitTrOffset: pendingOffset || undefined,
@@ -649,7 +696,7 @@ export class TablePaging {
           tableFragment
         )
         const fragHeight = (contentHeight + fragRepeatHeight) * scale
-        newRowList.push({
+        place({
           ...row,
           height: fragHeight + rowMargin,
           offsetY: isFirstFragment ? row.offsetY : 0,
@@ -669,7 +716,7 @@ export class TablePaging {
             }
           ],
           tableFragment
-        })
+        }, fragment.pageNo, fragment.columnIndex ?? 0, fragment.y)
         // skipHeight 累计下一片段起始行之前的完整行高
         const nextStart = fragments[f + 1]?.startTrIndex ?? 0
         while (skipIndex < nextStart) {
@@ -682,7 +729,7 @@ export class TablePaging {
       currentColumn = slotColumn
       const lastFragRow = newRowList[newRowList.length - 1]
       pageHeight =
-        this.draw.getMainOuterHeight(pageNo, curDirection) +
+        (lastFragRow.sectionPlacement?.y ?? slotTop(pageNo)) +
         lastFragRow.height +
         (lastFragRow.offsetY || 0) +
         (fragments.length === 1 ? carriedOffsetY : 0)

@@ -411,13 +411,19 @@ export class Position {
         inColumn && columnLayout
           ? columnLayout.offsets[curRow.columnIndex!] || 0
           : 0
-      const effectiveInnerWidth =
-        inColumn && columnLayout ? columnLayout.width : innerWidth
-      x += columnOffset
+      const effectiveInnerWidth = curRow.sectionPlacement?.width ??
+        (inColumn && columnLayout ? columnLayout.width : innerWidth)
+      if (curRow.sectionPlacement) {
+        x = startX + curRow.sectionPlacement.x
+        y = curRow.sectionPlacement.y
+      } else {
+        x += columnOffset
+      }
       // 行存在环绕的可能性均不设置行布局
       if (!curRow.isSurround) {
         // 计算行偏移量（行居中、居右）
-        const curRowWidth = curRow.width + (curRow.offsetX || 0)
+        const curRowWidth = curRow.width + (curRow.offsetX || 0) +
+          (curRow.elementList[0]?.indentRight ?? 0) * scale
         if (curRow.rowFlex === RowFlex.CENTER) {
           x += (effectiveInnerWidth - curRowWidth) / 2
         } else if (curRow.rowFlex === RowFlex.RIGHT) {
@@ -811,7 +817,17 @@ export class Position {
   }
 
   // 根据 x 坐标推断点击位置所属的分栏索引；无分栏布局时返回 undefined
-  private _getColumnIndexByX(x: number, pageNo: number): number | undefined {
+  private _getColumnIndexByX(x: number, pageNo: number, y: number): number | undefined {
+    const sections = this.draw.getPageRowList()[pageNo]?.filter(row => row.sectionPlacement)
+    if (sections?.length) {
+      const band = sections.find(row => row.sectionPlacement &&
+        y >= row.sectionPlacement.bandTop && y < row.sectionPlacement.bandBottom
+      )?.sectionPlacement
+      if (!band) return
+      const relative = x - this.draw.getMargins()[3]
+      return Math.max(0, Math.min(band.count - 1,
+        Math.floor(relative / (band.width + band.gap))))
+    }
     const direction = this.draw.getPageDirection(pageNo)
     const layout = this.draw.getColumnLayout(direction)
     if (!layout) return
@@ -1144,7 +1160,7 @@ export class Position {
       ? positionList.filter(p => p.isLastLetter && p.pageNo === positionNo)
       : positionList.filter(p => p.isLastLetter)
     // 分栏场景下，只保留与点击栏一致的行，避免误命中同 y 的其他栏
-    const clickColumnIndex = this._getColumnIndexByX(x, curPageNo)
+    const clickColumnIndex = this._getColumnIndexByX(x, curPageNo, y)
     const lastLetterList =
       clickColumnIndex === undefined
         ? matchedLastLetterList

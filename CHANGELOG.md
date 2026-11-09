@@ -3,6 +3,14 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
+## @hivemagnus/canvas-word-engine 1.2.0 (unreleased)
+
+- Retain the generic section-layout candidate: continuous columns, section
+  stories, PAGE fields, table flow, paragraph presentation/spacing, native indent
+  alignment, hard breaks, terminal cell paragraphs and section-leading space.
+- Keep the earlier application compatibility APIs and PR behavior covered by
+  the shared engine suite; preserve deferred observer teardown.
+
 ## @hivemagnus/canvas-word-codec 1.1.0 (unreleased)
 
 - Add the explicit `./exchange` API with the final PR 46 source and 35 retained

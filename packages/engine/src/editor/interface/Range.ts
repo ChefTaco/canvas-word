@@ -17,6 +17,8 @@ export interface IRange {
 /** Runtime indices are temporary. Stable table ownership and exact container
  * text must be revalidated before restoring a range into another context. */
 export interface ILocatedRange {
+  /** Focus the input agent after successful validation/restoration. Default false. */
+  focus?: boolean
   zone: EditorZone
   tablePath: { tableId: string; rowId: string; cellId: string }[]
   /** Header/footer page; main-story pages come from their element positions. */

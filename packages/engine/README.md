@@ -79,3 +79,8 @@ canvas-editor's; see its [documentation](https://hufe.club/canvas-editor-docs/).
 
 MIT. Upstream copyright is retained in [LICENSE](LICENSE); embedded build
 helper notices are in [NOTICES.md](NOTICES.md).
+
+The unreleased 1.2.0 source also preserves the generic section-layout candidate,
+including continuous columns, page-owned stories/fields, paragraph boxes and
+section table flow. Use an exact verified source pin for this candidate; npm
+1.1.0 remains the published stable engine. See [UPSTREAM.md](UPSTREAM.md).

@@ -1,5 +1,7 @@
 import { paragraphBreakBefore } from '../../utils/paragraphLayout'
+import { continuousSectionGroups, paginateContinuousSections } from './ContinuousSections'
 import { PARAGRAPH_FLOW_ATTR } from '../draw/ParagraphPaging'
+import { applyParagraphBoxes } from './ParagraphBox'
 import { applyLineHeight } from '../../utils/lineHeight'
 import { ZERO } from '../../dataset/constant/Common'
 import { FlexDirection, ImageDisplay } from '../../dataset/enum/Common'
@@ -89,6 +91,42 @@ export class LayoutEngine {
     const indentLeft = (element?: IElement) => element?.indentLeft ?? layoutOf(element)?.indent ?? 0
     const firstIndent = (element?: IElement) => element?.indentFirstLine ?? (layoutOf(element)?.continuesBefore ? 0 : layoutOf(element)?.firstLineIndent ?? 0)
     const before = (element?: IElement) => element?.spacingBefore ?? (layoutOf(element)?.continuesBefore ? 0 : layoutOf(element)?.before ?? 0)
+    if (elementList.some(element => element.section !== undefined)) {
+      if (!isPagingMode || isFromTable || payload.resume ||
+        elementList !== draw.getMainElementList() || surroundElementList.length ||
+        options.column.count !== 1 || options.column.separator) {
+        throw new Error('Sections require the paged main story and no global columns.')
+      }
+      const groups = continuousSectionGroups(elementList, innerWidth, options.scale)
+      let rowIndex = 0
+      const measured = groups.map(group => {
+        // Measure at this band's actual width; page placement happens below.
+        // Recursive measurement has no section tags or page/column side effects.
+        const rows = this.computeRowList({
+          innerWidth: group.width,
+          isSectionMeasurement: true,
+          elementList: group.elements.map(element => {
+            const content = { ...element }
+            delete content.section
+            return content
+          })
+        })
+        for (const row of rows) {
+          for (const element of row.elementList) element.section = group.section
+          if (row.width + (row.offsetX ?? 0) +
+            (row.elementList[0]?.indentRight ?? 0) * options.scale > group.width + 1e-7)
+            throw new Error(`Section text exceeds the column width: ${row.width} > ${group.width}; ${row.elementList.map(element=>element.value).join('')}`)
+          row.startIndex += group.startIndex
+          row.rowIndex = rowIndex++
+        }
+        return { section: group.section, width: group.width, rows }
+      })
+      return paginateContinuousSections(measured, (pageNo, sectionId) => ({
+        top: draw.getMargins()[0] + draw.getHeader().getExtraHeight(pageNo, undefined, sectionId),
+        bottom: draw.getHeight() - draw.getMargins()[2] -
+          draw.getFooter().getExtraHeight(pageNo, undefined, sectionId)
+      }), options.scale, (rows, config) => draw.getTablePaging().splitTableRowAcrossPages(rows, config))
+    }
     const {
       defaultSize,
       scale,
@@ -110,6 +148,7 @@ export class LayoutEngine {
           throw new Error('Paragraph flow properties must be boolean.')
         if (
           element[key] === true &&
+          !payload.isSectionMeasurement &&
           (!isPagingMode || isFromTable || elementList !== draw.getMainElementList())
         )
           throw new Error(
@@ -117,6 +156,9 @@ export class LayoutEngine {
           )
       }
     }
+    if (elementList.some(element => element.cellTerminal !== undefined &&
+      (!isFromTable || element.cellTerminal !== true || !element.paragraphId)))
+      throw new Error('Cell terminators require owned table-cell paragraphs.')
     const defaultBasicRowMarginHeight = draw.getDefaultBasicRowMarginHeight()
     const ctx = document
       .createElement('canvas')
@@ -257,6 +299,17 @@ export class LayoutEngine {
     const finalizeRow = (row: IRow, paragraphEnd: boolean) => {
       if (finalizedRows.has(row)) return
       applyLineHeight(row, scale, isHidden)
+      // A hidden owned marker is still an element. Empty hidden paragraphs
+      // must not regain an exact/minimum line box or before/after spacing.
+      if (row.elementList.some(el => el.paragraphSpacing === 'collapse') &&
+        row.elementList.length > 0 && row.elementList.every(isHidden)) {
+        row.height = 0
+        row.ascent = 0
+        row.offsetY = 0
+        row.spacingAfter = 0
+        finalizedRows.add(row)
+        return
+      }
       if (paragraphEnd) {
         const last = row.elementList[row.elementList.length - 1]
         const after = last?.spacingAfter ?? (row.paragraphLayout?.continuesAfter ? 0 : row.paragraphLayout?.after)
@@ -454,6 +507,7 @@ export class LayoutEngine {
               innerWidth: (td.width! - tdPaddingWidth) * scale,
               elementList: td.value,
               isFromTable: true,
+                isSectionMeasurement: payload.isSectionMeasurement,
               isPagingMode
             })
             const rowHeight = rowList.reduce(
@@ -728,9 +782,9 @@ export class LayoutEngine {
             )
             // 后面存在元素 && 单词宽度大于行可用宽度，无需折行
             const wordWidth = width * scale
-            if (endElement && wordWidth <= availableWidth) {
-              curRowWidth += wordWidth
-              nextElement = endElement
+            if ((endElement || element.lineHeight) && wordWidth <= availableWidth) {
+              curRowWidth += wordWidth - (element.lineHeight ? metrics.width : 0)
+              if (endElement) nextElement = endElement
             }
           }
           // 标点符号
@@ -742,7 +796,7 @@ export class LayoutEngine {
         }
       }
       // 列表信息
-      if (element.listId && element.value === ZERO && !element.listWrap) {
+      if (element.listId && element.value === ZERO && !element.listWrap && !element.hardBreak) {
         if (listIndexMap.has(element.listId)) {
           listIndexMap.set(
             element.listId,
@@ -879,7 +933,7 @@ export class LayoutEngine {
             : 0
         // 段前间距：换行符引领的行为新段落首行
         // 换行符归属于新段落元素集合，优先从换行符自身读取
-        if (element.paragraphLayout ? row.paragraphStart : element.value === ZERO && !element.listWrap) {
+        if (element.paragraphLayout ? row.paragraphStart : element.value === ZERO && !element.listWrap && !element.hardBreak) {
           const previousAfter = curRow.paragraphLayout?.continuesAfter ? 0 : curRow.paragraphLayout?.after ?? 0
           row.offsetY += Math.max(0, before(element) - previousAfter) * scale
         }
@@ -925,7 +979,10 @@ export class LayoutEngine {
       if (isWrap || i === elementList.length - 1) {
         finalizeRow(
           curRow,
-          isWrap ? (element.paragraphLayout ? !!rowList[rowList.length - 1]?.paragraphStart : element.value === ZERO && !element.listWrap) : true
+          isWrap ? (element.paragraphLayout ? !!rowList[rowList.length - 1]?.paragraphStart :
+            (element.value === ZERO && !element.listWrap && !element.hardBreak) ||
+            (isForceBreak && curRow.elementList[0]?.paragraphSpacing === 'collapse' &&
+              curRow.elementList[0]?.paragraphId !== element.paragraphId)) : true
         )
         // 换行原因：宽度不足
         curRow.isWidthNotEnough = isWidthNotEnough && !isForceBreak
@@ -1049,6 +1106,7 @@ export class LayoutEngine {
     // point. Seal it once; re-finalizing could resurrect a hidden review row.
     if (lastRow?.elementList.length) finalizeRow(lastRow, true)
     // 区域最小高度：内容高度不足时向区域末行补充高度（内容超出时由行高自然撑开）
+    applyParagraphBoxes(rowList, scale, isFromTable)
     draw.getArea().applyMinHeight(rowList)
     return rowList
   }
@@ -1070,6 +1128,20 @@ export class LayoutEngine {
         elementList,
         isElementListTruncated
       }
+    }
+    if (rowList.some(row => row.sectionPlacement)) {
+      for (const row of rowList) {
+        const placement = row.sectionPlacement
+        if (!placement) throw new Error('Mixed section and global pagination.')
+        if (Number.isInteger(maxPageNo) && placement.pageNo > (maxPageNo ?? 0))
+          throw new Error('Section layout cannot truncate a document.')
+        while (pageRowList.length <= placement.pageNo) {
+          pageRowList.push([])
+          pageDirectionList.push(paperDirection)
+        }
+        pageRowList[placement.pageNo].push(row)
+      }
+      return { pageRowList, pageDirectionList, elementList, isElementListTruncated }
     }
     let direction = paperDirection
     let pageLimit = this.draw.getHeight(direction)

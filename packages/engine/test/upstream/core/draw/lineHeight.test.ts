@@ -1,3 +1,6 @@
+import { DisplayList } from '@/editor/core/render/model/DisplayList'
+import { TraceType } from '@/editor/dataset/enum/Trace'
+import { EditorZone } from '@/editor/dataset/enum/Editor'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Draw } from '@/editor/core/draw/Draw'
 import { TextParticle } from '@/editor/core/draw/particle/TextParticle'
@@ -252,4 +255,16 @@ it('does not enlarge visible text for a hidden inline image', () => {
   })
   applyLineHeight(mixed, 1, element => !!element.hide)
   expect(mixed.height).toBe(24)
+})
+
+it('keeps explicit and review underlines at the text baseline when paragraph border space is reserved',()=>{
+  const draw=render([{value:'\nx',underline:true,trace:[{type:TraceType.INSERTED,author:'Reviewer'}],lineHeight:{rule:'exact',value:20}}])
+  try{
+    vi.spyOn(draw,'isTraceMode').mockReturnValue(true)
+    const rows=draw.getRowList(),last=rows.at(-1)
+    if(!last)throw new Error('No rendered row')
+    const record=()=>{const ctx=new DisplayList();draw.drawRow(ctx,{rowList:rows,elementList:draw.getMainElementList(),positionList:draw.getPosition().getPositionList(),pageNo:0,startIndex:0,innerWidth:260,zone:EditorZone.MAIN});return ctx.getOperations()}
+    const before=record();last.height+=12;last.paragraphBottom=12
+    expect(record()).toEqual(before)
+  }finally{draw.destroy()}
 })

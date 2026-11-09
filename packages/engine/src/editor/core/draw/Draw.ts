@@ -1,5 +1,6 @@
 import { paragraphRowHeight } from '../../utils/paragraphLayout'
 import { isElementUnderlined } from '../../utils/hyperlink'
+import { drawParagraphPresentation } from './ParagraphPresentation'
 import { PARAGRAPH_FLOW_ATTR } from './ParagraphPaging'
 import { version } from '../../../../package.json'
 import { bindExternalElements } from '../../utils/externalBindings'
@@ -370,9 +371,9 @@ export class Draw {
   // 设置打印数据
   public setPrintData() {
     this.printModeData = {
-      header: this.header.getElementList(),
+      header: this.header.getAllElementList(),
       main: this.elementList,
-      footer: this.footer.getElementList()
+      footer: this.footer.getAllElementList()
     }
     // 过滤控件辅助元素
     const clonePrintModeData = deepClone(this.printModeData)
@@ -1655,9 +1656,9 @@ export class Draw {
     // 同步block的最新数据
     this.blockParticle.update()
     const data: Required<IEditorData> = {
-      header: this.getHeaderElementList(),
+      header: this.header.getAllElementList(),
       main: mainElementList,
-      footer: this.getFooterElementList(),
+      footer: this.footer.getAllElementList(),
       graffiti: this.graffiti.getValue()
     }
     return data
@@ -1881,6 +1882,7 @@ export class Draw {
       const rowContentHeight =
         curRow.height -
         (curRow.spacingAfter || 0) -
+        (curRow.paragraphBottom || 0) -
         (curRow.areaPadding?.height || 0)
       let preHighlight = ''
       for (let j = 0; j < curRow.elementList.length; j++) {
@@ -1921,6 +1923,7 @@ export class Draw {
   }
 
   public drawRow(ctx: IRenderContext, payload: IDrawRowPayload) {
+    drawParagraphPresentation(ctx, payload, this.options.scale)
     // 优先绘制高亮元素
     this._drawHighlight(ctx, payload)
     // 绘制元素及文本装饰
@@ -1977,6 +1980,7 @@ export class Draw {
       const rowContentHeight =
         curRow.height -
         (curRow.spacingAfter || 0) -
+        (curRow.paragraphBottom || 0) -
         (curRow.areaPadding?.height || 0)
       // 选区绘制记录
       const rangeRecord: IElementFillRect = {
@@ -2701,7 +2705,7 @@ export class Draw {
       // 无脏区间或门控不满足时退回全量，行为与未开启时一致
       const dirtyRange = this.incrementalRowComputer.consumeDirtyRange()
       const flowLayout = this.elementList.some(element =>
-        PARAGRAPH_FLOW_ATTR.some(key => element[key] === true)
+        PARAGRAPH_FLOW_ATTR.some(key => element[key] === true) || element.section !== undefined
       )
       const incrementalResult = flowLayout
         ? null
@@ -2710,7 +2714,7 @@ export class Draw {
         incrementalResult?.rowList ?? this.computeRowList(rowComputePayload)
       this.incrementalRowComputer.observeLayout()
       // 分页模式下跨页表格在渲染层拆分为按页片段行
-      if (isPagingMode) {
+      if (isPagingMode && !this.rawRowList.some(row => row.sectionPlacement)) {
         this.rowList = this.tablePaging.splitTableRowAcrossPages(
           this.rawRowList
         )

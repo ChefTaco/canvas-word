@@ -1,4 +1,5 @@
 import { paragraphRowHeight } from '../../../../utils/paragraphLayout'
+import { ParagraphPaging } from '../../ParagraphPaging'
 import { ElementType, IElement, TableBorder } from '../../../..'
 import { TdBorder, TdSlash } from '../../../../dataset/enum/table/Table'
 import { DeepRequired } from '../../../../interface/Common'
@@ -303,6 +304,25 @@ export class TableParticle {
     const isExternalBorderType = borderType === TableBorder.EXTERNAL
     // 内边框
     const isInternalBorderType = borderType === TableBorder.INTERNAL
+    if (drawTdList.some(item => item.td.edgeBorders !== undefined)) {
+      ctx.save()
+      for (const { td, offsetY, height } of drawTdList) {
+        const x = (td.x ?? 0) * scale + startX
+        const y = (td.y ?? 0) * scale + startY + offsetY
+        const width = (td.width ?? 0) * scale
+        for (const edge of ['top', 'right', 'bottom', 'left'] as const) {
+          const border = td.edgeBorders?.[edge]
+          if (!border) continue
+          ctx.strokeStyle = border.color; ctx.lineWidth = border.width * scale
+          ctx.beginPath()
+          ctx.moveTo(edge === 'right' ? x + width : x, edge === 'bottom' ? y + height : y)
+          ctx.lineTo(edge === 'left' ? x : x + width, edge === 'top' ? y : y + height)
+          ctx.stroke()
+        }
+      }
+      ctx.restore()
+      return
+    }
     ctx.save()
     // 虚线
     if (borderType === TableBorder.DASH) {
@@ -729,6 +749,16 @@ export class TableParticle {
       const mid = (lo + hi + 1) >> 1
       if (prefix[mid] <= limit + 1e-8) lo = mid
       else hi = mid - 1
+    }
+    const rows = td.rowList ?? []
+    const flow = new ParagraphPaging(rows, element => Boolean(element.hide || this.draw.getTraceParticle().isTraceHidden(element)), true)
+    const empty = (this.draw.getHeight() - this.draw.getMargins()[0] - this.draw.getMargins()[2] - padding[0] - padding[2]) * this.options.scale
+    while (lo > first && lo < rows.length) {
+      let safe = true
+      for (let index = first; index < lo; index++) {
+        if (prefix[index] + flow.required(index, empty).height > prefix[lo] + 1e-8) { safe = false; lo = index; break }
+      }
+      if (safe) break
     }
     return lo === last ? end : Math.max(start, prefix[lo] / this.options.scale)
   }

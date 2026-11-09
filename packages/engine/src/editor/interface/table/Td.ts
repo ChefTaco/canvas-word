@@ -29,6 +29,7 @@ export interface ITd {
   backgroundColor?: string
   /** Document pixels: top, right, bottom, left. Falls back to table.tdPadding. */
   padding?: IPadding
+  edgeBorders?: Partial<Record<'top' | 'right' | 'bottom' | 'left', { color: string; width: number }>>
   borderColor?: string
   borderWidth?: number
   borderTypes?: TdBorder[]

@@ -85,7 +85,7 @@ export class ScrollObserver {
   }
 
   private _observer = debounce(() => {
-    if (this.destroyed) return
+    if (this.destroyed || typeof document === 'undefined') return
     const { intersectionPageNo, visiblePageNoList } = this.getPageVisibleInfo()
     this.draw.setIntersectionPageNo(intersectionPageNo)
     this.draw.setVisiblePageNoList(visiblePageNoList)

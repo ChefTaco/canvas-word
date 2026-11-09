@@ -16,6 +16,7 @@ export function resolveLocatedRange(draw: Draw, input: ILocatedRange) {
   if (!input || !Object.values(EditorZone).includes(input.zone)) {
     throw new Error('Located range has an invalid zone')
   }
+  if (input.focus !== undefined && typeof input.focus !== 'boolean') throw new Error('Located range has an invalid focus option')
   if (!Array.isArray(input.tablePath) || input.tablePath.length > 8) {
     throw new Error('Located range has an invalid table path')
   }

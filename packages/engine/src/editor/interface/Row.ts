@@ -1,3 +1,4 @@
+import type { ISectionRowPlacement } from '../core/layout/ContinuousSections'
 import { PaperDirection } from '../dataset/enum/Editor'
 import { RowFlex } from '../dataset/enum/Row'
 import {
@@ -17,6 +18,7 @@ export type IRowElement = IElement & {
 }
 
 export interface IRow {
+  sectionPlacement?: ISectionRowPlacement
   width: number
   height: number
   ascent: number
@@ -36,6 +38,7 @@ export interface IRow {
   spacingAfter?: number
   /** True when spacingAfter is already included in measured height. */
   spacingIncluded?: boolean
+  paragraphBottom?: number
   // 区域最小高度补高（已计入height，绘制选区等视觉效果时需剔除；
   // 分页溢出时截断至页底，height为本页内部分）
   areaPadding?: {

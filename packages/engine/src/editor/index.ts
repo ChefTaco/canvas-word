@@ -92,7 +92,19 @@ export default class Editor {
     'leading-paragraph-v1',
     'table-cell-padding-v1',
     'table-row-keep-v1',
-    'paragraph-flow-v1'
+    'paragraph-flow-v1',
+    'native-paragraph-indent-v1',
+    'continuous-column-sections-v1',
+    'section-stories-v1',
+    'page-fields-v1',
+    'section-table-flow-v1',
+    'paragraph-presentation-v1',
+    'cell-edge-borders-v1',
+    'hard-break-v1',
+    'located-focus-v1',
+    'paragraph-box-spacing-v1',
+    'cell-terminal-paragraph-v1',
+    'section-leading-space-v1'
   ] as const
   public command: Command
   public version: string

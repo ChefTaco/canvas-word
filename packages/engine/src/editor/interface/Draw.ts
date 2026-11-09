@@ -92,6 +92,8 @@ export interface IComputeRowListPayload {
   startY?: number
   isFromTable?: boolean
   isPagingMode?: boolean
+  /** Internal section/story measurement; pagination is performed by its owner. */
+  isSectionMeasurement?: boolean
   pageHeight?: number
   surroundElementList?: IElement[]
   /**

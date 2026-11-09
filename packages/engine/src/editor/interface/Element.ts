@@ -19,6 +19,7 @@ import { IColgroup } from './table/Colgroup'
 import { ITd } from './table/Td'
 import { ITr } from './table/Tr'
 import type { ILineHeight } from './LineHeight'
+import type { IContinuousSection } from '../core/layout/ContinuousSections'
 
 export interface IElementBasic {
   id?: string
@@ -43,6 +44,14 @@ export interface IParagraphLayout {
 }
 
 export interface IElementStyle {
+  storySectionId?: string
+  pageField?: 'pageNumber'
+  paragraphId?: string
+  paragraphSpacing?: 'collapse'
+  cellTerminal?: true
+  hardBreak?: boolean
+  paragraphPresentation?: { shading?: string; borders?: Partial<Record<'top' | 'right' | 'bottom' | 'left', { color: string; width: number; space: number }>> }
+  section?: IContinuousSection
   font?: string
   size?: number
   width?: number
