@@ -1,3 +1,4 @@
+import { ZERO } from '../../dataset/constant/Common'
 import type { IRow } from '../../interface/Row'
 
 /** Opt-in paragraph gap collapsing and outer-border space. Called on measured
@@ -19,7 +20,7 @@ export function applyParagraphBoxes(rows: IRow[], scale: number, insideCell = fa
     if (owner.cellTerminal) {
       if (!insideCell || start === 0 || end !== rows.length - 1 ||
         rows[start - 1].elementList[0]?.type !== 'table' || rows.slice(start, end + 1).some(row => row.elementList.some(element =>
-        element.value !== '\u200b' && element.value !== '')))
+        element.value !== ZERO && element.value !== '')))
         throw new Error('Cell terminators require an empty table-cell paragraph.')
       for (const row of rows.slice(start, end + 1)) {
         row.height = 0; row.ascent = 0; row.offsetY = 0; row.spacingAfter = 0

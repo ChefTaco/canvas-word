@@ -1,3 +1,4 @@
+import { ZERO } from '@/editor/dataset/constant/Common'
 import { ElementType } from '@/editor/dataset/enum/Element'
 import { EDITOR_ELEMENT_COPY_ATTR } from '@/editor/dataset/constant/Element'
 import { describe, expect, it } from 'vitest'
@@ -49,11 +50,13 @@ describe('opt-in paragraph box spacing',()=>{
 
 it('does not allocate a phantom line for an owned empty terminator after a nested table',()=>{
   const table=row('table');table.elementList[0].type=ElementType.TABLE
-  const terminal=row('terminal',12,8);terminal.elementList[0].value='\u200b';terminal.elementList[0].cellTerminal=true
+  const terminal=row('terminal',12,8);terminal.elementList[0].value=ZERO;terminal.elementList[0].cellTerminal=true
   applyParagraphBoxes([table,terminal],1,true)
   expect(terminal.height).toBe(0);expect(terminal.offsetY).toBe(0);expect(terminal.elementList[0].paragraphId).toBe('terminal')
   expect(EDITOR_ELEMENT_COPY_ATTR).not.toContain('cellTerminal')
   const nonempty=row('terminal');nonempty.elementList[0].cellTerminal=true
+  expect(()=>applyParagraphBoxes([table,nonempty],1,true)).toThrow('empty table-cell paragraph')
+  nonempty.elementList[0].value='\u200b'
   expect(()=>applyParagraphBoxes([table,nonempty],1,true)).toThrow('empty table-cell paragraph')
   expect(()=>applyParagraphBoxes([table,terminal],1,false)).toThrow('empty table-cell paragraph')
   expect(()=>applyParagraphBoxes([terminal],1,true)).toThrow('empty table-cell paragraph')

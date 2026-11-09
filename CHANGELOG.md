@@ -10,6 +10,8 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   alignment, hard breaks, terminal cell paragraphs and section-leading space.
 - Keep the earlier application compatibility APIs and PR behavior covered by
   the shared engine suite; preserve deferred observer teardown.
+- Validate empty nested-table terminators with the internal paragraph marker,
+  preserving authored literal zero-width-space text.
 
 ## @hivemagnus/canvas-word-codec 1.1.0 (unreleased)
 

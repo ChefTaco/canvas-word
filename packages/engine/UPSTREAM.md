@@ -68,6 +68,9 @@ column sections, page-owned stories and PAGE fields, section table flow,
 paragraph borders/boxes and collapsed spacing, hard line breaks, native scalar
 indent alignment, terminal cell paragraphs and section-leading space. It keeps
 the existing root paragraph metadata and glyph binding command compatible.
+Terminal cell validation uses the shared internal paragraph marker and rejects
+authored literal zero-width-space text as nonempty. The nested-table regression
+in `test/upstream/core/layout/ParagraphBox.test.ts` covers both cases.
 This work was not submitted upstream; no upstream acceptance is claimed.
 
 The retained source tests include `continuousSections`, `moduleSections`,
