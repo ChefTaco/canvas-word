@@ -11,7 +11,7 @@ license and copyright are retained in [LICENSE](LICENSE).
 | Upstream source pin | commit `948e6ac583f63efc48403e2a63a32456ee9c274c`, plus the six exact contribution heads listed below |
 | Closest published upstream | `@hufe921/canvas-editor` 1.0.5, base commit `f8435acb98badcc831174055e9001d42fe51bb0f` |
 | Original fork base | 1.0.4, commit `9af964c2f920da1fcc7d541fae4ab781fcd3bf02` |
-| Current source candidate | 1.2.0 (unreleased); published stable release 1.1.0 |
+| Current source candidate | 1.2.0 |
 
 The source pin includes merged PR 1492, which is not yet verified in a published
 upstream package. The complete runtime source delta from the 1.0.4 base is
@@ -60,7 +60,7 @@ The `./testing` export supplies diagnostic hooks from the same runtime bundle.
 Applications use the main entry; integration fixtures can exercise the installed
 package without reaching into a second source checkout.
 
-## Section-layout source candidate (1.2.0, unreleased)
+## Section-layout source candidate (1.2.0)
 
 The shared source also retains the generic section-layout candidate from
 original development commit `1a156d313cc9965418431c84078537fc0a8c93bb`: continuous
@@ -257,7 +257,7 @@ identity, review, touch and performance regressions pass. Keep patches small and
 propose generic changes upstream once their fixtures pass. Review upstream
 monthly; security advisories trigger immediate review.
 
-## Layout target hardening (unreleased)
+## Layout target hardening (1.2.0)
 
 Layout requires owned array entries and refuses prototype objects before writing computed
 metrics, while preserving the element identity needed by incremental layout. Regression tests

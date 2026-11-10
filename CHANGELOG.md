@@ -3,7 +3,10 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
-## @hivemagnus/canvas-word-engine 1.2.0 (unreleased)
+## @hivemagnus/canvas-word-engine 1.2.0
+
+- Reject inherited layout entries and shared prototype mutation targets while
+  preserving ordinary element identity.
 
 - Retain the generic section-layout candidate: continuous columns, section
   stories, PAGE fields, table flow, paragraph presentation/spacing, native indent
@@ -13,7 +16,7 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 - Validate empty nested-table terminators with the internal paragraph marker,
   preserving authored literal zero-width-space text.
 
-## @hivemagnus/canvas-word-codec 1.1.0 (unreleased)
+## @hivemagnus/canvas-word-codec 1.1.0
 
 - Add the explicit `./exchange` API with the final PR 46 source and 35 retained
   regressions: embedded fonts, nested table presentation, sections, typography,
