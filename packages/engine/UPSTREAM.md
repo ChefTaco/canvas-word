@@ -256,3 +256,10 @@ Upgrade only to an exact upstream commit after serialization, Unicode, table
 identity, review, touch and performance regressions pass. Keep patches small and
 propose generic changes upstream once their fixtures pass. Review upstream
 monthly; security advisories trigger immediate review.
+
+## Layout target hardening (unreleased)
+
+Layout requires owned array entries and refuses prototype objects before writing computed
+metrics, while preserving the element identity needed by incremental layout. Regression tests
+exercise inherited entries, built-in prototype targets and ordinary record identity. This fork
+change has not been submitted upstream.

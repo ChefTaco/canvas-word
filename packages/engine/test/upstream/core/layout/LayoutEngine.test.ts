@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import assert from 'node:assert/strict'
 import { LayoutEngine } from '@/editor/core/layout/LayoutEngine'
 import {
   PageMode,
   PaperDirection
 } from '@/editor/dataset/enum/Editor'
 import { IRow } from '@/editor/interface/Row'
+import type { IElement } from '@/editor/interface/Element'
 import type { Draw } from '@/editor/core/draw/Draw'
 
 function createRow(
@@ -30,6 +32,59 @@ function createDraw(overrides: Record<string, unknown> = {}): Draw {
     getTablePaging: () => ({ truncateTableByFragment: () => false }),
     ...overrides
   } as unknown as Draw
+}
+
+function createTextDraw(): Draw {
+    const textMetrics = {
+      width: 10,
+      actualBoundingBoxAscent: 8,
+      actualBoundingBoxDescent: 2,
+      actualBoundingBoxLeft: 0,
+      actualBoundingBoxRight: 10,
+      fontBoundingBoxAscent: 8,
+      fontBoundingBoxDescent: 2
+    }
+    const draw = createDraw({
+      getListParticle: () => ({
+        computeListStyle: () => new Map<string, number>()
+      }),
+      getTextParticle: () => ({
+        measureText: () => textMetrics,
+        measureBasisWord: () => textMetrics,
+        getBasisWordBoundingBoxAscent: () => 8,
+        measureWord: () => ({ width: 0, endElement: null }),
+        measurePunctuationWidth: () => 0
+      }),
+      getOptions: () => ({
+        defaultSize: 16,
+        scale: 1,
+        imgCaption: { size: 12, top: 0 },
+        table: {
+          tdPadding: [0, 0, 0, 0],
+          defaultColMinWidth: 40,
+          overflow: false
+        },
+        defaultTabWidth: 16,
+        paperDirection: PaperDirection.VERTICAL,
+        lab: { incrementalCompute: false },
+        wordBreak: 0
+      }),
+      getElementFont: () => '16px sans-serif',
+      getElementRowMargin: () => 0,
+      getDefaultBasicRowMarginHeight: () => 0,
+      getMargins: () => [0, 0, 0, 0],
+      isDesignMode: () => false,
+      isAreaHideDisabled: () => false,
+      isWordLike: () => false,
+      getTraceParticle: () => ({ isTraceHidden: () => false }),
+      getPosition: () => ({
+        setSurroundPosition: (payload: {
+          rowElementRect: { x: number }
+        }) => ({ x: payload.rowElementRect.x, rowIncreaseWidth: 0 })
+      }),
+      getArea: () => ({ applyMinHeight: () => undefined })
+    })
+    return draw
 }
 
 describe('LayoutEngine', () => {
@@ -158,55 +213,7 @@ describe('LayoutEngine', () => {
   })
 
   it('按可用宽度对简单文本断行', () => {
-    const textMetrics = {
-      width: 10,
-      actualBoundingBoxAscent: 8,
-      actualBoundingBoxDescent: 2,
-      actualBoundingBoxLeft: 0,
-      actualBoundingBoxRight: 10,
-      fontBoundingBoxAscent: 8,
-      fontBoundingBoxDescent: 2
-    }
-    const draw = createDraw({
-      getListParticle: () => ({
-        computeListStyle: () => new Map<string, number>()
-      }),
-      getTextParticle: () => ({
-        measureText: () => textMetrics,
-        measureBasisWord: () => textMetrics,
-        getBasisWordBoundingBoxAscent: () => 8,
-        measureWord: () => ({ width: 0, endElement: null }),
-        measurePunctuationWidth: () => 0
-      }),
-      getOptions: () => ({
-        defaultSize: 16,
-        scale: 1,
-        imgCaption: { size: 12, top: 0 },
-        table: {
-          tdPadding: [0, 0, 0, 0],
-          defaultColMinWidth: 40,
-          overflow: false
-        },
-        defaultTabWidth: 16,
-        paperDirection: PaperDirection.VERTICAL,
-        lab: { incrementalCompute: false },
-        wordBreak: 0
-      }),
-      getElementFont: () => '16px sans-serif',
-      getElementRowMargin: () => 0,
-      getDefaultBasicRowMarginHeight: () => 0,
-      getMargins: () => [0, 0, 0, 0],
-      isDesignMode: () => false,
-      isAreaHideDisabled: () => false,
-      isWordLike: () => false,
-      getTraceParticle: () => ({ isTraceHidden: () => false }),
-      getPosition: () => ({
-        setSurroundPosition: (payload: {
-          rowElementRect: { x: number }
-        }) => ({ x: payload.rowElementRect.x, rowIncreaseWidth: 0 })
-      }),
-      getArea: () => ({ applyMinHeight: () => undefined })
-    })
+    const draw = createTextDraw()
     const engine = new LayoutEngine(draw)
 
     const rowList = engine.computeRowList({
@@ -219,5 +226,41 @@ describe('LayoutEngine', () => {
     expect(
       rowList.map(row => row.elementList.map(element => element.value).join(''))
     ).toEqual(['ab', 'c'])
+  })
+})
+
+
+describe('layout mutation targets', () => {
+  it('rejects inherited array entries before mutating a shared prototype', () => {
+    const list = new Array(1)
+    Object.setPrototypeOf(list, Object.assign(Object.create(Array.prototype), { 0: Object.prototype }))
+    const before = Object.getOwnPropertyDescriptors(Object.prototype)
+    try {
+      expect(() => new LayoutEngine(createTextDraw()).computeRowList({ innerWidth: 20, elementList: list })).toThrow('own array entries')
+      assert.deepEqual(Object.getOwnPropertyDescriptors(Object.prototype), before)
+    } finally {
+      for (const key of ['metrics', 'left', 'style']) {
+        if (before[key]) Object.defineProperty(Object.prototype, key, before[key])
+        else Reflect.deleteProperty(Object.prototype, key)
+      }
+    }
+  })
+  it.each([Object.prototype, Array.prototype, Date.prototype])('rejects a prototype even in an own array slot', prototype => {
+    const before = Object.getOwnPropertyDescriptors(prototype)
+    try {
+      expect(() => new LayoutEngine(createTextDraw()).computeRowList({ innerWidth: 20, elementList: [prototype as unknown as IElement] })).toThrow('must not be prototypes')
+      assert.deepEqual(Object.getOwnPropertyDescriptors(prototype), before)
+    } finally {
+      for (const key of ['metrics', 'left', 'style']) {
+        if (before[key]) Object.defineProperty(prototype, key, before[key])
+        else Reflect.deleteProperty(prototype, key)
+      }
+    }
+  })
+  it('retains the identity and computed metrics of ordinary owned records', () => {
+    const element = { value: 'a' }
+    const rows = new LayoutEngine(createTextDraw()).computeRowList({ innerWidth: 20, elementList: [element] })
+    expect(rows[0].elementList[0]).toBe(element)
+    expect(rows[0].elementList[0].metrics.width).toBe(10)
   })
 })
