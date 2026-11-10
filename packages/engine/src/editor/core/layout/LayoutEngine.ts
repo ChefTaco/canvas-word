@@ -370,7 +370,18 @@ export class LayoutEngine {
     }
     for (let i = resumeStartIndex; i < elementList.length; i++) {
       const curRow: IRow = rowList[rowList.length - 1]
+      // A layout write must never target an inherited array slot or a prototype.
+      if (!Object.hasOwn(elementList, i)) {
+        throw new Error('Layout elements must be own array entries.')
+      }
       const element = elementList[i]
+      if (!element || typeof element !== 'object') {
+        throw new Error('Layout elements must be records.')
+      }
+      const constructor = Object.getOwnPropertyDescriptor(element, 'constructor')?.value
+      if (typeof constructor === 'function' && constructor.prototype === element) {
+        throw new Error('Layout elements must not be prototypes.')
+      }
       // 断点续算：复杂结构元素不参与增量，由调用方退化为全量计算
       if (payload.resume?.shouldAbort?.(element, i)) break
       // 段首tab悬挂累计：换行符开启新段落累计窗口，首个内容元素后关闭
