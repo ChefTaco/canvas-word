@@ -107,7 +107,8 @@
   },
   "accessibility": {
     "selected": "Selected: ",
-    "input": "Input: "
+    "input": "Input: ",
+    "document": "Document text"
   },
   "trace": {
     "insert": "Inserted",

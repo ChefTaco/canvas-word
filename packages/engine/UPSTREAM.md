@@ -258,6 +258,16 @@ The image-source predicate still decides only whether image sources stay live
 (`src/__tests__/clipboard-html-sanitize.test.ts`). Upstream status: not
 submitted.
 
+### 22. Off-screen text mirror for screen readers
+
+With `accessibility: { disabled: false, textMirror: true }` the existing
+off-screen accessibility region also holds a `role="document"` copy of the
+main text: headings as `h1`-`h6`, paragraphs, ordered and unordered lists, and
+table cell text. It is rebuilt shortly after each content change, and the block
+holding the caret carries `aria-current="true"`. Blank lines are not mirrored.
+The option is off by default (`test/browser/render.test.ts`). Upstream status:
+not submitted.
+
 ### Packaging changes in this repository (1.0.0)
 
 - Published as an ES module bundle (`dist/canvas-word-engine.js`, CSS and
