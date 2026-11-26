@@ -2,6 +2,7 @@ import { EDITOR_PREFIX } from '../../../../dataset/constant/Editor'
 import { BlockType } from '../../../../dataset/enum/Block'
 import { ElementType } from '../../../../dataset/enum/Element'
 import { IIframeInfo } from '../../../../interface/Block'
+import { resolveIframeSandbox } from '../../../../utils/iframeSandbox'
 import { DeepRequired } from '../../../../interface/Common'
 import { IEditorOption } from '../../../../interface/Editor'
 import { IRowElement } from '../../../../interface/Row'
@@ -185,7 +186,8 @@ export class BlockParticle {
         width: element.metrics.width / scale,
         height: element.metrics.height / scale,
         src: element.block.iframeBlock.src,
-        srcdoc: element.block.iframeBlock.srcdoc
+        srcdoc: element.block.iframeBlock.srcdoc,
+        sandbox: resolveIframeSandbox(this.options, element.block.iframeBlock)
       })
     })
 

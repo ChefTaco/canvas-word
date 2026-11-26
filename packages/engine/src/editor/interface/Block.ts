@@ -24,4 +24,6 @@ export interface IIframeInfo {
   height: number
   src?: string
   srcdoc?: string
+  /** Sandbox tokens for the print copy; the safe default when omitted. */
+  sandbox?: string[]
 }

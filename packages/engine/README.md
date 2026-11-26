@@ -85,6 +85,17 @@ text) that follows edits and marks the caret's paragraph with
 `disabled: false`. Header, footer and editing through the mirror are not
 covered.
 
+### Iframe blocks
+
+Iframe blocks are sandboxed with `allow-scripts` only, in the editor, in print
+copies and in `getHTML`/clipboard output: their script runs in an opaque
+origin and cannot reach the host page, its storage or cookies. A document's
+`iframeBlock.sandbox` list may tighten that but cannot combine
+`allow-scripts` with `allow-same-origin`. Hosts whose documents are all
+trusted can restore the previous `allow-scripts allow-same-origin` sandbox
+with `unsafeIframeAllowSameOrigin: true`; document content then runs with the
+host's origin.
+
 ### Bundles
 
 `dist/canvas-word-engine.js` is the readable bundle (`.`). The same module is

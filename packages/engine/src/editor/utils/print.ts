@@ -1,5 +1,34 @@
 import { PaperDirection } from '../dataset/enum/Editor'
 import { IIframeInfo } from '../interface/Block'
+import { DEFAULT_IFRAME_SANDBOX } from './iframeSandbox'
+
+const IFRAME_LOADED_MESSAGE = '__LOADED_TO_CANVAS_EDITOR__'
+// Tells the print document that a srcdoc frame finished loading. Content that
+// sets __CUSTOM_CANVAS_EDITOR_LOAD_HOOK__ posts the message to itself when it is
+// ready; it is relayed to the parent, which also works across a sandbox.
+const IFRAME_LOAD_SCRIPT = `
+        <script>
+          (function () {
+            var done = function () {
+              try {
+                window.parent.postMessage({ type: '${IFRAME_LOADED_MESSAGE}' }, '*')
+              } catch (error) {}
+            }
+            if (!window.__CUSTOM_CANVAS_EDITOR_LOAD_HOOK__) {
+              done()
+              return
+            }
+            window.addEventListener('message', function (event) {
+              if (
+                event.source === window &&
+                event.data &&
+                event.data.type === '${IFRAME_LOADED_MESSAGE}'
+              ) {
+                done()
+              }
+            })
+          })()
+        </script>`
 
 function convertPxToPaperSize(width: number, height: number) {
   if (width === 1125 && height === 1593) {
@@ -107,16 +136,19 @@ async function printPages(
       iframeEl.style.width = `${iframeInfo.width}px`
       iframeEl.style.height = `${iframeInfo.height}px`
       iframeEl.style.border = 'none'
+      // Print copies are always sandboxed, like the editor's own frames.
+      iframeEl.setAttribute(
+        'sandbox',
+        (Array.isArray(iframeInfo.sandbox)
+          ? iframeInfo.sandbox
+          : DEFAULT_IFRAME_SANDBOX
+        ).join(' ')
+      )
       if (iframeInfo.src) {
         iframeEl.src = iframeInfo.src
       } else if (iframeInfo.srcdoc) {
         // 注入脚本到 body 最后
-        const script = `
-        <script>
-          if (!window.__CUSTOM_CANVAS_EDITOR_LOAD_HOOK__) {
-            window.postMessage({ type: '__LOADED_TO_CANVAS_EDITOR__' }, '*')
-          }
-        </script>`
+        const script = IFRAME_LOAD_SCRIPT
         const srcdoc = iframeInfo.srcdoc
         if (srcdoc.includes('</body>')) {
           iframeEl.srcdoc = srcdoc.replace('</body>', `${script}</body>`)
@@ -250,19 +282,39 @@ async function waitForPrintResources(doc: Document): Promise<void> {
 
 async function waitIframeLoad(doc: Document) {
   const iframeList = Array.from(doc.querySelectorAll('iframe'))
+  const printWindow = doc.defaultView
 
   const iframePromises = iframeList.map(iframe => {
-    const iframePromise = new Promise(resolve => {
+    const iframePromise = new Promise<void>(resolve => {
       // srcdoc需要等待事件（优先使用自定义事件，否则使用注入的脚本事件）
-      if (iframe.srcdoc) {
-        iframe.contentWindow?.addEventListener('message', e => {
-          if (e.data.type === '__LOADED_TO_CANVAS_EDITOR__') {
-            resolve(true)
-          }
-        })
-      } else {
+      if (!iframe.srcdoc || !printWindow) {
         // url不等待直接返回
-        resolve(true)
+        resolve()
+        return
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const done = () => {
+        clearTimeout(timer)
+        printWindow.removeEventListener('message', onMessage)
+        resolve()
+      }
+      const onMessage = (event: MessageEvent) => {
+        if (
+          event.source === iframe.contentWindow &&
+          event.data?.type === IFRAME_LOADED_MESSAGE
+        ) {
+          done()
+        }
+      }
+      timer = setTimeout(done, PRINT_RESOURCE_TIMEOUT)
+      printWindow.addEventListener('message', onMessage)
+      // Without allow-scripts the injected script never runs.
+      const sandbox = (iframe.getAttribute('sandbox') || '').split(/\s+/)
+      if (
+        iframe.hasAttribute('sandbox') &&
+        !sandbox.includes('allow-scripts')
+      ) {
+        iframe.addEventListener('load', done, { once: true })
       }
     })
     return iframePromise

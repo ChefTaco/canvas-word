@@ -61,6 +61,13 @@ export interface IEditorData {
 export interface IEditorOption {
   /** Called before loading document images; false retains the element without fetching it. */
   imageSourceAllowed?: ((element: IElement) => boolean) | null
+  /**
+   * UNSAFE. Restores the previous iframe sandbox default: `allow-scripts allow-same-origin`
+   * by default, and document-supplied sandbox lists are used as given. Script in
+   * `srcdoc` or same-origin iframe blocks can then run with the host page's
+   * origin. Enable only when every document is trusted. Default false.
+   */
+  unsafeIframeAllowSameOrigin?: boolean
   mode?: EditorMode
   locale?: string
   defaultType?: string

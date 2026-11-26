@@ -282,6 +282,22 @@ strings in the live document either
 (`src/__tests__/clipboard-html-reparse.test.ts`,
 `test/browser/clipboard-reparse.test.ts`). Upstream status: not submitted.
 
+### 24. Iframe blocks run in an opaque origin (Unreleased)
+
+`IFrameBlock.sandbox` defaults to `allow-scripts` instead of
+`allow-scripts allow-same-origin`, which let `srcdoc` and same-origin content
+from document data script the host page. `resolveIframeSandbox`
+(`src/editor/utils/iframeSandbox.ts`) applies the policy in the editor, the
+print copy (previously unsandboxed) and `createDomFromElementList`: document
+lists cannot combine `allow-scripts` with `allow-same-origin`, malformed lists
+fall back to the default, and an empty list keeps an empty `sandbox`
+attribute. The print load script posts to its parent so the wait crosses the
+sandbox, and each frame is given up after 10 seconds. Redefining the frame's
+window is skipped when it is cross-origin. The `unsafeIframeAllowSameOrigin`
+option restores the old behaviour
+(`src/__tests__/iframe-sandbox.test.ts`, `test/browser/iframe-sandbox.test.ts`).
+Upstream status: not submitted.
+
 ### Packaging changes in this repository (1.0.0)
 
 - Published as an ES module bundle (`dist/canvas-word-engine.js`, CSS and
