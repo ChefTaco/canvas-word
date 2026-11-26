@@ -1,6 +1,6 @@
 {
   "name": "@hivemagnus/canvas-word-engine",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Canvas-based Word-style document editor engine (maintained MIT fork of canvas-editor) with stable serialized element identities",
   "keywords": [
     "canvas-editor",

@@ -5,6 +5,7 @@ import { IElement } from '../interface/Element'
 import {
   createDomFromElementList,
   getNonDeletedElementList,
+  sanitizeClipboardHTML,
   zipElementList
 } from './element'
 
@@ -50,7 +51,8 @@ export async function writeClipboardItem(
   } else {
     const fakeElement = document.createElement('div')
     fakeElement.setAttribute('contenteditable', 'true')
-    fakeElement.innerHTML = html
+    // Never parse markup in the live document: parse it inertly and sanitize.
+    fakeElement.append(sanitizeClipboardHTML(html))
     document.body.append(fakeElement)
     // add new range
     const selection = window.getSelection()
