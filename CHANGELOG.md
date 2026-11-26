@@ -5,17 +5,10 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
 ## Unreleased
 
-### Repository
+## @hivemagnus/canvas-word-engine 1.3.0 - 2026-11-26
 
-- Seeded mutation fuzzing of the codec's untrusted-input boundary
-  (`packages/codec/test/fuzz.test.ts`): mutated XML parts, mutated ZIP bytes and
-  random XML through both entry points must convert or raise `WordCodecError`.
-  `FUZZ_ITERATIONS` and `FUZZ_SEED` widen a local run.
-- A weekly `Upstream watch` workflow compares the pins in `UPSTREAM.md` with
-  upstream canvas-editor and its DOCX plugin (default branches and npm
-  releases) and keeps one reminder issue open while upstream has moved.
-
-### @hivemagnus/canvas-word-engine
+Released from `main`. Includes the 1.2.2 security fix (HTML import never
+reparses sanitized markup) together with the new entries below.
 
 - `./testing` now resolves to its own small entry (`dist/testing.js`) that
   re-exports the diagnostic hooks from the main bundle, instead of pointing at
@@ -30,7 +23,29 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   paragraphs, lists and table text as DOM, follows edits and marks the caret's
   block with `aria-current`. Off by default.
 
-### @hivemagnus/canvas-word-codec
+### Repository
+
+- A weekly `Upstream watch` workflow compares the pins in `UPSTREAM.md` with
+  upstream canvas-editor and its DOCX plugin (default branches and npm
+  releases) and keeps one reminder issue open while upstream has moved.
+
+### Upgrade notes
+
+- Import diagnostic hooks from `@hivemagnus/canvas-word-engine/testing`.
+  Importing them from the main entry still works in 1.x but is deprecated and
+  ends in the next major version.
+- `@hivemagnus/canvas-word-engine/min` is an optional minified build of the
+  same bundle; the main entry and its readable bundle are unchanged.
+- The screen-reader text mirror is off by default; enable it with
+  `accessibility: { disabled: false, textMirror: true }`.
+- Coming from 1.2.1 or earlier: the 1.2.2 notes apply (pasted and `setHTML`
+  HTML no longer keeps inline SVG, MathML, `template`, `xmp`, `noembed`,
+  `noframes` or `plaintext` content).
+- No data or storage migrations; serialized documents are unchanged. Downgrade
+  to 1.2.2 is safe when the `./min` and `./testing` entries and `textMirror`
+  are not used.
+
+## @hivemagnus/canvas-word-codec 1.2.0 - 2026-11-26
 
 - Fix: a Word document with a `mailto:` or other non-HTTP(S) hyperlink no
   longer fails to import. The link is dropped, its text is kept and the
@@ -68,7 +83,14 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   loss; links and list formatting inside notes are dropped with
   `NOTE_HYPERLINK` / `NOTE_LIST`. The root API is unchanged.
 
-#### Upgrade notes
+### Repository
+
+- Seeded mutation fuzzing of the codec's untrusted-input boundary
+  (`packages/codec/test/fuzz.test.ts`): mutated XML parts, mutated ZIP bytes and
+  random XML through both entry points must convert or raise `WordCodecError`.
+  `FUZZ_ITERATIONS` and `FUZZ_SEED` widen a local run.
+
+### Upgrade notes
 
 - Documents with `mailto:` (or `ftp:`, `file:` and similar) links used to be
   rejected with `UNSAFE_DOCUMENT_RELATIONSHIP`; they now import with those links
@@ -85,11 +107,15 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 - `./exchange` imports now contain note runs (`run.note`) where Word documents
   have footnotes or endnotes. Code that walks runs should keep or skip them;
   `validateDocument` accepts them, and `exportDocx` writes them back.
+- No data or storage migrations. Downgrade to 1.1.1 is safe only for callers
+  that use none of `limits`, `measureDocx`, `resolveRelationshipTarget`,
+  `isWebHyperlink` or note runs; 1.1.1 rejects `mailto:` documents again and
+  reports footnotes/endnotes as losses.
 
 ## @hivemagnus/canvas-word-engine 1.2.2 - 2026-11-26
 
 Patch release cut from `engine-v1.2.1` (branch `release/engine-1.2.x`); the
-Unreleased engine changes above are not part of it.
+engine 1.3.0 additions above are not part of it.
 
 - Security fix: the HTML sanitizer added in 1.2.1 could be bypassed. Pasted or
   `setHTML` markup inside a heading was serialized and parsed again in the live
