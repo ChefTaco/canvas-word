@@ -1,17 +1,20 @@
 // Headless render smoke test of the built bundle. Uses an installed Chromium through
 // Playwright; the bundle is served from dist/ through request interception, so no server
-// or network access is needed. Run `npm run build` first.
+// or network access is needed. Run `npm run build` first. The readable and the minified
+// bundle run the same checks; `./testing` must re-export from the main bundle instance.
 import { existsSync, readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser, type Page } from 'playwright';
 
 const origin = 'http://canvas-word.test';
-const bundle = new URL('../../dist/canvas-word-engine.js', import.meta.url);
-const page = `<!doctype html><html><head><meta charset="utf-8"></head>
+const dist = new URL('../../dist/', import.meta.url);
+const bundles = ['canvas-word-engine.js', 'canvas-word-engine.min.js'] as const;
+const page = (bundle: string) => `<!doctype html><html><head><meta charset="utf-8"></head>
 <body><div id="editor" style="width: 820px"></div>
 <script type="module">
-  import Editor, { EditorMode, ElementType } from '/canvas-word-engine.js';
-  window.canvasWord = { Editor, EditorMode, ElementType };
+  import Editor, { EditorMode, ElementType, Draw as MainDraw } from '/${bundle}';
+  const testing = ${bundle === 'canvas-word-engine.js' ? "await import('/testing.js')" : 'undefined'};
+  window.canvasWord = { Editor, EditorMode, ElementType, sharedTesting: testing ? testing.Draw === MainDraw : true };
   window.dispatchEvent(new Event('canvas-word-ready'));
 </script></body></html>`;
 
@@ -19,9 +22,8 @@ let browser: Browser;
 let tab: Page;
 const errors: string[] = [];
 
-beforeAll(async () => {
-  if (!existsSync(bundle)) throw new Error('Build the engine first (npm run build).');
-  browser = await chromium.launch();
+async function open(bundle: string) {
+  await tab?.close();
   tab = await browser.newPage();
   tab.on('pageerror', (error) => errors.push(error.message));
   tab.on('console', (message) => {
@@ -30,20 +32,36 @@ beforeAll(async () => {
   await tab.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.origin !== origin) return route.abort();
-    if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: page });
-    if (url.pathname === '/canvas-word-engine.js')
-      return route.fulfill({ contentType: 'text/javascript', body: readFileSync(bundle, 'utf8') });
+    if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: page(bundle) });
+    const file = url.pathname.slice(1);
+    if ([...bundles, 'testing.js'].includes(file))
+      return route.fulfill({ contentType: 'text/javascript', body: readFileSync(new URL(file, dist), 'utf8') });
     return route.fulfill({ status: 404, body: '' });
   });
   await tab.goto(`${origin}/`);
   await tab.waitForFunction(() => 'canvasWord' in window);
+}
+
+beforeAll(async () => {
+  for (const bundle of [...bundles, 'testing.js'])
+    if (!existsSync(new URL(bundle, dist))) throw new Error('Build the engine first (npm run build).');
+  browser = await chromium.launch();
 });
 
 afterAll(async () => {
   await browser?.close();
 });
 
-describe('engine render smoke test', () => {
+describe.each(bundles)('engine render smoke test (%s)', (bundle) => {
+  beforeAll(async () => {
+    errors.length = 0;
+    await open(bundle);
+  });
+
+  it('serves ./testing from the main bundle instance', async () => {
+    expect(await tab.evaluate(() => (window as any).canvasWord.sharedTesting)).toBe(true);
+  });
+
   it('renders paginated canvas pages with visible content in read-only mode', async () => {
     const result = await tab.evaluate(async () => {
       const { Editor, EditorMode } = (window as any).canvasWord;
