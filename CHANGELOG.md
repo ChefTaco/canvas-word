@@ -5,7 +5,12 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
 ## Unreleased
 
-### @hivemagnus/canvas-word-engine
+## @hivemagnus/canvas-word-engine 2.0.0 - 2026-11-26
+
+Major release: iframe blocks from document data are sandboxed in an opaque
+origin and get only host-approved Permissions Policy features, and the
+diagnostic hooks deprecated in 1.3.0 leave the main entry. The codec is
+unchanged (still 1.2.0).
 
 - Security (breaking default): iframe blocks are sandboxed with
   `allow-scripts` only, so script in a `srcdoc` (or same-origin `src`) iframe
@@ -41,7 +46,7 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   internal, undeclared binding, `__canvasWordTesting`, that `./testing` reads;
   it is not public API.
 
-#### Upgrade notes
+### Upgrade notes
 
 - Iframe block content now runs in an opaque origin: it has no access to the
   host page, `parent`/`top` DOM, cookies, `localStorage` or IndexedDB, and the
@@ -69,8 +74,10 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   `IRow` or `IElementPosition` from `@hivemagnus/canvas-word-engine` now fail
   (a TypeScript error, and a module link error in the browser); import them from
   `@hivemagnus/canvas-word-engine/testing` instead, which works since 1.3.0.
-- No data or storage migrations; serialized documents are unchanged.
-  Downgrading restores the previous sandbox and `allow` handling.
+- No data or storage migrations; serialized documents are unchanged and
+  need no conversion. Downgrading to 1.3.0 is safe: it restores the previous
+  sandbox and `allow` handling and the main-entry hooks, and ignores the
+  `iframeAllow` and `unsafeIframeAllowSameOrigin` options.
 
 ## @hivemagnus/canvas-word-engine 1.3.0 - 2026-11-26
 
