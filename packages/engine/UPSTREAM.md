@@ -298,6 +298,20 @@ option restores the old behaviour
 (`src/__tests__/iframe-sandbox.test.ts`, `test/browser/iframe-sandbox.test.ts`).
 Upstream status: not submitted.
 
+### 25. Host-controlled iframe permissions policy (Unreleased)
+
+The iframe `allow` attribute was built as `[allow || ['fullscreen']].join(' ')`
+from document data, which joined the list with commas (not the Permissions
+Policy `;` separator) and let a document delegate any feature, such as camera,
+microphone or geolocation. `resolveIframeAllow`
+(`src/editor/utils/iframeSandbox.ts`) now takes the features from the new
+`iframeAllow` option (default `['fullscreen']`); a document's
+`iframeBlock.allow` can only narrow it, malformed entries are dropped, and the
+attribute is serialized as `feature1; feature2` (omitted when empty) in the
+editor and in `createDomFromElementList`
+(`src/__tests__/iframe-allow.test.ts`, `test/browser/iframe-sandbox.test.ts`).
+Upstream status: not submitted.
+
 ### Packaging changes in this repository (1.0.0)
 
 - Published as an ES module bundle (`dist/canvas-word-engine.js`, CSS and

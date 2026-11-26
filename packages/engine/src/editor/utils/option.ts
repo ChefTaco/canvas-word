@@ -28,6 +28,7 @@ import { defaultColumnOption } from '../dataset/constant/Column'
 import { IColumnOption } from '../interface/Column'
 import { ICheckboxOption } from '../interface/Checkbox'
 import { DeepRequired } from '../interface/Common'
+import { DEFAULT_IFRAME_ALLOW } from './iframeSandbox'
 import { IControlOption } from '../interface/Control'
 import { ICursorOption } from '../interface/Cursor'
 import { IEditorOption, ILabOption, IModeRule } from '../interface/Editor'
@@ -227,6 +228,7 @@ export function mergeOption(
   return {
     imageSourceAllowed: null,
     unsafeIframeAllowSameOrigin: false,
+    iframeAllow: [...DEFAULT_IFRAME_ALLOW],
     mode: EditorMode.EDIT,
     locale: 'zhCN',
     defaultType: 'TEXT',

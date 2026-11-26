@@ -1,5 +1,5 @@
 import { imageSourceAllowed } from './imageSource'
-import { resolveIframeSandbox } from './iframeSandbox'
+import { applyIframeAllow, resolveIframeSandbox } from './iframeSandbox'
 import {
   cloneProperty,
   deepClone,
@@ -10,7 +10,6 @@ import {
   pickObject,
   splitText
 } from '.'
-import { IFrameBlock } from '../core/draw/particle/block/modules/IFrameBlock'
 import { LaTexParticle } from '../core/draw/particle/latex/LaTexParticle'
 import { NON_BREAKING_SPACE, ZERO } from '../dataset/constant/Common'
 import {
@@ -1532,7 +1531,7 @@ export function createDomFromElementList(
               'sandbox',
               resolveIframeSandbox(editorOptions, { sandbox }).join(' ')
             )
-            iframe.setAttribute('allow', [allow || IFrameBlock.allow].join(' '))
+            applyIframeAllow(iframe, editorOptions, { allow })
             iframe.style.display = 'block'
             iframe.style.border = 'none'
             if (src) {

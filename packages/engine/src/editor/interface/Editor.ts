@@ -68,6 +68,12 @@ export interface IEditorOption {
    * origin. Enable only when every document is trusted. Default false.
    */
   unsafeIframeAllowSameOrigin?: boolean
+  /**
+   * Permissions Policy features (for example `fullscreen`, `camera`) that iframe
+   * blocks may use. A document's `iframeBlock.allow` can only narrow this list.
+   * Default `['fullscreen']`; `[]` delegates no features.
+   */
+  iframeAllow?: string[]
   mode?: EditorMode
   locale?: string
   defaultType?: string
