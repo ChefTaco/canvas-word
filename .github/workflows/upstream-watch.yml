@@ -1,0 +1,38 @@
+name: Upstream watch
+
+# Weekly: compare the upstream pins in packages/*/UPSTREAM.md with
+# Hufe921/canvas-editor, Hufe921/canvas-editor-plugin and their npm releases,
+# and keep one open "Upstream changes to review" issue while upstream has moved.
+
+on:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Compare upstream pins
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # open, update or close the reminder issue
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.3
+          package-manager-cache: false
+      - name: Report upstream drift
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/check-upstream.mjs --report-issue >> "$GITHUB_STEP_SUMMARY"

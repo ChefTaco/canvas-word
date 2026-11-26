@@ -11,6 +11,9 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   (`packages/codec/test/fuzz.test.ts`): mutated XML parts, mutated ZIP bytes and
   random XML through both entry points must convert or raise `WordCodecError`.
   `FUZZ_ITERATIONS` and `FUZZ_SEED` widen a local run.
+- A weekly `Upstream watch` workflow compares the pins in `UPSTREAM.md` with
+  upstream canvas-editor and its DOCX plugin (default branches and npm
+  releases) and keeps one reminder issue open while upstream has moved.
 
 ### @hivemagnus/canvas-word-engine
 

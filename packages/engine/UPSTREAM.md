@@ -13,6 +13,11 @@ license and copyright are retained in [LICENSE](LICENSE).
 | Original fork base | 1.0.4, commit `9af964c2f920da1fcc7d541fae4ab781fcd3bf02` |
 | Current source candidate | 1.2.1 |
 
+The scheduled `Upstream watch` workflow (`scripts/check-upstream.mjs`) compares
+these pins with upstream every week and keeps an issue open while upstream has
+moved. Keep the table rows above in this format; `scripts/test-upstream-watch.mjs`
+parses them.
+
 The source pin includes merged PR 1492, which is not yet verified in a published
 upstream package. The complete runtime source delta from the 1.0.4 base is
 integrated, including incremental row computation, per-control background

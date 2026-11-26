@@ -24,7 +24,7 @@ jobs:
       - run: bash scripts/scan-secrets.sh
       - run: bash scripts/check-private-data.sh
       # The release-workflow tests need the YAML dependency and run in verify after npm ci.
-      - run: node --test scripts/test-privacy-policy.mjs scripts/test-publish-environment.mjs
+      - run: node --test scripts/test-privacy-policy.mjs scripts/test-publish-environment.mjs scripts/test-upstream-watch.mjs
 
   verify:
     name: Verify (Node ${{ matrix.node-version }})
