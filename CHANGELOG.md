@@ -32,6 +32,14 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   it. The attribute is now serialized with the Permissions Policy separator
   (`fullscreen; camera`); a list was previously joined with commas instead
   of the `;` the attribute syntax specifies.
+- Breaking: the main entry no longer re-exports the diagnostic hooks
+  `Draw`, `Previewer`, `HyperlinkParticle` and `mergeOption` or the `IRow` and
+  `IElementPosition` types, as announced in 1.3.0; import them from
+  `@hivemagnus/canvas-word-engine/testing`, which still shares the main
+  bundle's module instance. `EDITOR_CLIPBOARD` stays on the main entry (it is
+  part of the editor's public API) and in `./testing`. The bundles carry one
+  internal, undeclared binding, `__canvasWordTesting`, that `./testing` reads;
+  it is not public API.
 
 #### Upgrade notes
 
@@ -57,6 +65,10 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   grant one add it, for example `iframeAllow: ['fullscreen', 'camera']`.
   `iframeAllow: []` delegates nothing. Documents that keep their `allow`
   lists keep working; the lists are now intersected with the host's.
+- Imports of `Draw`, `Previewer`, `HyperlinkParticle`, `mergeOption`,
+  `IRow` or `IElementPosition` from `@hivemagnus/canvas-word-engine` now fail
+  (a TypeScript error, and a module link error in the browser); import them from
+  `@hivemagnus/canvas-word-engine/testing` instead, which works since 1.3.0.
 - No data or storage migrations; serialized documents are unchanged.
   Downgrading restores the previous sandbox and `allow` handling.
 

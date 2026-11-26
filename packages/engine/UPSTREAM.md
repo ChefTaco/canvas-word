@@ -61,8 +61,11 @@ regressions use the existing assertions adapted for persistent glyph IDs.
 Native device, actual screen-reader and application release acceptance remain
 separate from these package checks.
 
-The `./testing` export (`dist/testing.js`) re-exports the diagnostic hooks from the
-main runtime bundle, so fixtures share its module instance. A minified build with a
+The `./testing` export (`dist/testing.js`) takes the diagnostic hooks from the
+main runtime bundle's internal `__canvasWordTesting` binding (`src/bundle.ts`, not
+in the public types), so fixtures share its module instance. Since 2.0.0 the main
+entry no longer re-exports `Draw`, `Previewer`, `HyperlinkParticle`, `mergeOption`,
+`IRow` or `IElementPosition`. A minified build with a
 source map (`./min`) is published beside the readable bundle.
 Applications use the main entry; integration fixtures can exercise the installed
 package without reaching into a second source checkout.

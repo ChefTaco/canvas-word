@@ -2,8 +2,9 @@
 // Runs after both bundle builds:
 // - removes the source maps Vite writes for inlined workers (dist/assets); the
 //   workers are embedded as blobs, so nothing references them;
-// - writes dist/testing.js, the `./testing` entry, as a thin re-export of the
-//   diagnostic hooks from the main bundle, so fixtures share its module instance;
+// - writes dist/testing.js, the `./testing` entry, which takes the diagnostic hooks
+//   from the main bundle's internal `__canvasWordTesting` binding, so fixtures share
+//   its module instance, and checks the main entry no longer exports them by name;
 // - checks the minified bundle points at its source map.
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
@@ -13,13 +14,22 @@ rmSync(new URL('assets/', dist), { recursive: true, force: true });
 const source = readFileSync(new URL('../src/testing.ts', import.meta.url), 'utf8');
 const names = [...source.matchAll(/^export \{ (\w+) \} from /gm)].map((match) => match[1]);
 if (!names.length) throw new Error('No diagnostic exports found in src/testing.ts.');
-const bundle = readFileSync(new URL('canvas-word-engine.js', dist), 'utf8');
-for (const name of names)
-  if (!new RegExp(`\\bas ${name}\\b|[{,\\s]${name}[,}\\s]`).test(bundle.slice(bundle.lastIndexOf('export {'))))
-    throw new Error(`The main bundle does not export ${name}.`);
+const internal = '__canvasWordTesting';
+for (const file of ['canvas-word-engine.js', 'canvas-word-engine.min.js']) {
+  const bundle = readFileSync(new URL(file, dist), 'utf8');
+  const exported = bundle.slice(Math.max(bundle.lastIndexOf('export {'), bundle.lastIndexOf('export{')));
+  if (!new RegExp(`\\b${internal}\\b`).test(exported)) throw new Error(`${file} does not export ${internal}.`);
+  // Since 2.0.0 the diagnostic hooks are only reachable through ./testing, except
+  // EDITOR_CLIPBOARD, which is also part of the upstream editor's public API.
+  for (const name of names.filter((hook) => hook !== 'EDITOR_CLIPBOARD'))
+    if (new RegExp(`\\bas ${name}\\b|[{,\\s]${name}[,}\\s]`).test(exported))
+      throw new Error(`${file} still exports ${name} from the main entry.`);
+}
 writeFileSync(
   new URL('testing.js', dist),
-  `/** Diagnostic hooks for integration fixtures; document applications use the main entry. */\nexport { ${names.join(', ')} } from './canvas-word-engine.js';\n`,
+  `/** Diagnostic hooks for integration fixtures; document applications use the main entry. */\n` +
+    `import { ${internal} as hooks } from './canvas-word-engine.js';\n` +
+    `export const { ${names.join(', ')} } = hooks;\n`,
 );
 
 const minified = readFileSync(new URL('canvas-word-engine.min.js', dist), 'utf8');
