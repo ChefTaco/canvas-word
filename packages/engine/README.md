@@ -96,6 +96,13 @@ trusted can restore the previous `allow-scripts allow-same-origin` sandbox
 with `unsafeIframeAllowSameOrigin: true`; document content then runs with the
 host's origin.
 
+The frame's `allow` attribute (Permissions Policy) comes from the host, not the
+document: `iframeAllow` lists the features iframe blocks may use (default
+`['fullscreen']`; `[]` delegates none), and a document's `iframeBlock.allow`
+can only narrow that list. A document that asks for `camera`, `microphone` or
+`geolocation` gets nothing unless the host lists the feature, for example
+`iframeAllow: ['fullscreen', 'camera']`. Print copies delegate no features.
+
 ### Bundles
 
 `dist/canvas-word-engine.js` is the readable bundle (`.`). The same module is

@@ -24,6 +24,14 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   the print.
 - New option `unsafeIframeAllowSameOrigin` (default `false`) restores the
   previous sandbox for hosts whose documents are all trusted.
+- Security: the iframe `allow` attribute (Permissions Policy) is no longer
+  taken from document data. A new option `iframeAllow` (default
+  `['fullscreen']`) lists the features iframe blocks may use, and a
+  document's `iframeBlock.allow` can only narrow it, so a document that asks
+  for camera, microphone or geolocation gets nothing unless the host allows
+  it. The attribute is now serialized with the Permissions Policy separator
+  (`fullscreen; camera`); a list was previously joined with commas instead
+  of the `;` the attribute syntax specifies.
 
 #### Upgrade notes
 
@@ -42,8 +50,15 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   `allow-scripts allow-same-origin` as the default and honours document
   sandbox lists as given, which lets document content run with the host's
   origin.
+- Iframe blocks only get the Permissions Policy features the host lists in
+  `iframeAllow` (default `['fullscreen']`). Documents whose
+  `iframeBlock.allow` asked for other features (for example `camera`,
+  `microphone`, `geolocation`, `autoplay`) lose them; hosts that want to
+  grant one add it, for example `iframeAllow: ['fullscreen', 'camera']`.
+  `iframeAllow: []` delegates nothing. Documents that keep their `allow`
+  lists keep working; the lists are now intersected with the host's.
 - No data or storage migrations; serialized documents are unchanged.
-  Downgrading restores the previous sandbox.
+  Downgrading restores the previous sandbox and `allow` handling.
 
 ## @hivemagnus/canvas-word-engine 1.3.0 - 2026-11-26
 

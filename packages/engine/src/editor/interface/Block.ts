@@ -4,6 +4,7 @@ export interface IIFrameBlock {
   src?: string
   srcdoc?: string
   sandbox?: string[]
+  /** Permissions Policy features; can only narrow the host's `iframeAllow` option. */
   allow?: string[]
 }
 

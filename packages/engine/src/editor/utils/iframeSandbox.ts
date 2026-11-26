@@ -47,3 +47,58 @@ export function resolveIframeSandbox(
   }
   return tokens
 }
+
+// Permissions Policy features delegated to iframe blocks when the host sets no
+// `iframeAllow`. Fullscreen only: no camera, microphone, geolocation or other
+// powerful features.
+export const DEFAULT_IFRAME_ALLOW: readonly string[] = Object.freeze([
+  'fullscreen'
+])
+
+const PERMISSION_FEATURE = /^[a-z][a-z0-9-]*$/
+
+function featureList(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+  return [
+    ...new Set(
+      value
+        .filter((feature): feature is string => typeof feature === 'string')
+        .map(feature => feature.trim().toLowerCase())
+        .filter(feature => PERMISSION_FEATURE.test(feature))
+    )
+  ]
+}
+
+/**
+ * Returns the Permissions Policy features an iframe block may use. The host's
+ * `iframeAllow` option is the allowlist (`DEFAULT_IFRAME_ALLOW` when unset or
+ * malformed); a document's `iframeBlock.allow` can only narrow it.
+ */
+export function resolveIframeAllow(
+  options: Pick<IEditorOption, 'iframeAllow'> | undefined,
+  iframeBlock?: Pick<IIFrameBlock, 'allow'> | null
+): string[] {
+  const permitted = featureList(options?.iframeAllow) ?? [...DEFAULT_IFRAME_ALLOW]
+  const requested = featureList(iframeBlock?.allow)
+  if (!requested) return permitted
+  return requested.filter(feature => permitted.includes(feature))
+}
+
+/**
+ * Serializes features as an iframe `allow` attribute (`feature1; feature2`);
+ * each feature uses the attribute's default allowlist, the frame's own origin.
+ */
+export function serializeIframeAllow(features: readonly string[]): string {
+  return features.join('; ')
+}
+
+/** Sets or removes the `allow` attribute of an iframe block's frame. */
+export function applyIframeAllow(
+  iframe: HTMLIFrameElement,
+  options: Pick<IEditorOption, 'iframeAllow'> | undefined,
+  iframeBlock?: Pick<IIFrameBlock, 'allow'> | null
+) {
+  const allow = serializeIframeAllow(resolveIframeAllow(options, iframeBlock))
+  if (allow) iframe.setAttribute('allow', allow)
+  else iframe.removeAttribute('allow')
+}

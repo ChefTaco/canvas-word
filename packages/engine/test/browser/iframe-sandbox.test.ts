@@ -27,6 +27,8 @@ const PROBE = `<!doctype html><html><body><p>embedded</p><script>
   try { result.secret = top.hostSecret; top.leaked = (top.leaked || 0) + 1; result.reached = true; }
   catch (error) { result.blocked = error.name; }
   try { result.storage = typeof localStorage.length; } catch (error) { result.storageBlocked = error.name; }
+  var policy = document.permissionsPolicy || document.featurePolicy;
+  if (policy) result.features = ['camera', 'microphone', 'geolocation', 'fullscreen'].filter(function (f) { return policy.allowsFeature(f); });
   top.postMessage({ probe: result }, '*');
 </script></body></html>`;
 
@@ -55,12 +57,17 @@ afterAll(async () => {
   await browser?.close();
 });
 
-type Probe = { ran?: boolean; reached?: boolean; secret?: string; blocked?: string; storageBlocked?: string };
-type Run = { sandbox: (string | null)[]; probes: Probe[]; leaked: number; printSandbox?: (string | null)[]; printMs?: number };
+type Probe = { ran?: boolean; reached?: boolean; secret?: string; blocked?: string; storageBlocked?: string; features?: string[] };
+type Run = { sandbox: (string | null)[]; allow: (string | null)[]; probes: Probe[]; leaked: number; printSandbox?: (string | null)[]; printMs?: number };
 
-async function run(sandbox: string[] | undefined, options: Record<string, unknown>, withPrint = false): Promise<Run> {
+async function run(
+  sandbox: string[] | undefined,
+  options: Record<string, unknown>,
+  withPrint = false,
+  allow?: string[],
+): Promise<Run> {
   return tab.evaluate(
-    async ({ probe, sandbox, options, withPrint }) => {
+    async ({ probe, sandbox, options, withPrint, allow }) => {
       const w = window as any;
       const { Editor, ElementType } = w.canvasWord;
       w.probes = [];
@@ -68,6 +75,7 @@ async function run(sandbox: string[] | undefined, options: Record<string, unknow
       const container = document.getElementById('editor') as HTMLDivElement;
       const iframeBlock: Record<string, unknown> = { srcdoc: probe };
       if (sandbox) iframeBlock.sandbox = sandbox;
+      if (allow) iframeBlock.allow = allow;
       const editor = new Editor(
         container,
         [{ type: ElementType.BLOCK, value: '', width: 300, height: 120, block: { type: 'iframe', iframeBlock } }, { value: '\n' }],
@@ -79,6 +87,7 @@ async function run(sandbox: string[] | undefined, options: Record<string, unknow
       await waitFor(1);
       const result: any = {
         sandbox: [...container.querySelectorAll('iframe')].map((frame) => frame.getAttribute('sandbox')),
+        allow: [...container.querySelectorAll('iframe')].map((frame) => frame.getAttribute('allow')),
       };
       if (withPrint) {
         const before = new Set(document.body.querySelectorAll(':scope > iframe'));
@@ -95,7 +104,7 @@ async function run(sandbox: string[] | undefined, options: Record<string, unknow
       result.leaked = w.leaked;
       return result;
     },
-    { probe: PROBE, sandbox, options, withPrint },
+    { probe: PROBE, sandbox, options, withPrint, allow },
   );
 }
 
@@ -127,6 +136,21 @@ describe('iframe block sandbox in Chromium', () => {
     expect(result.sandbox).toEqual(['allow-scripts allow-same-origin']);
     expect(result.probes[0]).toMatchObject({ ran: true, reached: true, secret: 'host-only' });
     expect(result.leaked).toBe(1);
+  });
+
+  it('a document asking for camera, microphone or geolocation gets none of them', async () => {
+    const result = await run(undefined, {}, false, ['camera', 'microphone', 'geolocation', 'fullscreen']);
+    expect(result.allow).toEqual(['fullscreen']);
+    expect(result.probes[0].features).toEqual(['fullscreen']);
+  });
+
+  it('only features in the host iframeAllow list reach the frame', async () => {
+    const result = await run(undefined, { iframeAllow: ['camera', 'fullscreen'] }, false, ['camera', 'microphone']);
+    expect(result.allow).toEqual(['camera']);
+    expect(result.probes[0].features).toEqual(['camera']);
+    const none = await run(undefined, { iframeAllow: [] }, false, ['camera']);
+    expect(none.allow).toEqual([null]);
+    expect(none.probes[0].features).toEqual([]);
   });
 
   it('raised no page errors', () => {

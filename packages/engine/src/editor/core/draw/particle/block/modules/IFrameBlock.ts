@@ -1,22 +1,24 @@
 import { IEditorOption } from '../../../../../interface/Editor'
 import { IRowElement } from '../../../../../interface/Row'
 import {
+  applyIframeAllow,
+  DEFAULT_IFRAME_ALLOW,
   DEFAULT_IFRAME_SANDBOX,
   resolveIframeSandbox
 } from '../../../../../utils/iframeSandbox'
 
 export class IFrameBlock {
   public static readonly sandbox = [...DEFAULT_IFRAME_SANDBOX]
-  public static readonly allow = ['fullscreen']
+  public static readonly allow = [...DEFAULT_IFRAME_ALLOW]
 
   private element: IRowElement
-  private options: Pick<IEditorOption, 'unsafeIframeAllowSameOrigin'>
+  private options: Pick<IEditorOption, 'unsafeIframeAllowSameOrigin' | 'iframeAllow'>
   private iframe: HTMLIFrameElement | null = null
   private isReadonly: boolean
 
   constructor(
     element: IRowElement,
-    options: Pick<IEditorOption, 'unsafeIframeAllowSameOrigin'> = {}
+    options: Pick<IEditorOption, 'unsafeIframeAllowSameOrigin' | 'iframeAllow'> = {}
   ) {
     this.element = element
     this.options = options
@@ -55,10 +57,7 @@ export class IFrameBlock {
       'sandbox',
       resolveIframeSandbox(this.options, iframeBlock).join(' ')
     )
-    iframe.setAttribute(
-      'allow',
-      [iframeBlock?.allow || IFrameBlock.allow].join(' ')
-    )
+    applyIframeAllow(iframe, this.options, iframeBlock)
     iframe.style.border = 'none'
     iframe.style.width = '100%'
     iframe.style.height = '100%'
