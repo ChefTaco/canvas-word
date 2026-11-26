@@ -3,6 +3,19 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
+## Unreleased
+
+### @hivemagnus/canvas-word-engine
+
+- Security: always parse pasted and `setHTML` HTML in an inert template and
+  strip scripts, inline event handlers and active URLs before it reaches the
+  document, also when no `imageSourceAllowed` policy is set. The policy still
+  controls only whether image sources stay live.
+
+### Both packages
+
+- Require Node.js 24.22.3+ or 26.13.1+, matching the rest of the suite.
+
 ## @hivemagnus/canvas-word-engine 1.2.0
 
 - Reject inherited layout entries and shared prototype mutation targets while

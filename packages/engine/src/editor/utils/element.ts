@@ -1673,6 +1673,52 @@ export function convertTextNodeToElement(
   return element
 }
 
+// Elements that can run script, load active content or redirect the page.
+const UNSAFE_CLIPBOARD_SELECTOR = 'script,noscript,iframe,frame,frameset,object,embed,applet,link,meta,base,portal,set,animate,animateMotion,animateTransform'
+// Elements whose media sources restricted clients must not load.
+const RESTRICTED_MEDIA_SELECTOR = 'style,video,audio,source,track'
+// URL schemes that execute or render active content when navigated to.
+const UNSAFE_URL_PATTERN = /^(?:(?:javascript|vbscript|livescript):|data:(?:text\/html|application\/xhtml))/i
+
+function isUnsafeAttributeValue(value: string): boolean {
+  // Browsers ignore ASCII whitespace and control characters inside schemes.
+  return UNSAFE_URL_PATTERN.test(value.replace(/[\u0000-\u0020\u007f-\u009f]/g, ''))
+}
+
+export function sanitizeClipboardHTML(
+  htmlText: string,
+  options: { detachImageSources?: boolean } = {}
+): DocumentFragment {
+  const template = document.createElement('template')
+  template.innerHTML = htmlText
+  const content = template.content
+  content.querySelectorAll(UNSAFE_CLIPBOARD_SELECTOR).forEach(node => node.remove())
+  if (options.detachImageSources) {
+    content.querySelectorAll(RESTRICTED_MEDIA_SELECTOR).forEach(node => node.remove())
+  }
+  content.querySelectorAll('*').forEach(node => {
+    for (const attribute of Array.from(node.attributes)) {
+      const name = attribute.name.toLowerCase()
+      if (
+        name.startsWith('on') ||
+        name === 'srcdoc' ||
+        name === 'formaction' ||
+        isUnsafeAttributeValue(attribute.value) ||
+        (options.detachImageSources &&
+          (name === 'srcset' || (name === 'style' && /url\s*\(/i.test(attribute.value))))
+      ) {
+        node.removeAttribute(attribute.name)
+      }
+    }
+    if (options.detachImageSources && node.tagName === 'IMG') {
+      const source = node.getAttribute('data-canvas-image-source') || node.getAttribute('src') || ''
+      node.setAttribute('data-canvas-image-source', source)
+      node.removeAttribute('src')
+    }
+  })
+  return content
+}
+
 export interface IGetElementListByHTMLOption {
   innerWidth: number
   imageSourceAllowed?: IEditorOption['imageSourceAllowed']
@@ -1952,24 +1998,13 @@ export function getElementListByHTML(
   document.body.appendChild(clipboardHost)
   const shadowRoot = clipboardHost.attachShadow({ mode: 'open' })
   const clipboardDom = document.createElement('div')
-  // Parse in an inert template before connecting markup. Restricted clients retain
-  // image sources as data, never as live attributes, including nested table/list HTML.
-  if (options.imageSourceAllowed) {
-    const template = document.createElement('template')
-    template.innerHTML = htmlText
-    template.content.querySelectorAll('script,style,link,iframe,object,embed,video,audio,source').forEach(node => node.remove())
-    template.content.querySelectorAll('*').forEach(node => {
-      for (const attribute of Array.from(node.attributes)) {
-        if (/^on/i.test(attribute.name) || attribute.name === 'srcset' || (attribute.name === 'style' && /url\s*\(/i.test(attribute.value))) node.removeAttribute(attribute.name)
-      }
-      if (node.tagName === 'IMG') {
-        const source = node.getAttribute('data-canvas-image-source') || node.getAttribute('src') || ''
-        node.setAttribute('data-canvas-image-source', source)
-        node.removeAttribute('src')
-      }
-    })
-    clipboardDom.append(template.content)
-  } else clipboardDom.innerHTML = htmlText
+  // Parse in an inert template and sanitize before connecting markup, whatever
+  // the options: live innerHTML would run inline handlers in the host origin.
+  // Restricted clients also retain image sources as data, never as live
+  // attributes, including nested table/list HTML.
+  clipboardDom.append(sanitizeClipboardHTML(htmlText, {
+    detachImageSources: !!options.imageSourceAllowed
+  }))
   shadowRoot.appendChild(clipboardDom)
   const deleteNodes: ChildNode[] = []
   clipboardDom.childNodes.forEach(child => {

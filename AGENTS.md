@@ -28,7 +28,7 @@ notes, or real user data, in code, tests, fixtures, docs, or commit messages:
 
 ## Ground rules
 
-- Node.js 24.22.1+ or 26.13.0+, npm workspaces, ESM, strict TypeScript.
+- Node.js 24.22.3+ or 26.13.1+, npm workspaces, ESM, strict TypeScript.
 - The engine has no runtime dependencies and builds to one self-contained
   bundle; keep it that way. Upstream engine source keeps its original
   formatting; keep fork changes small and generic.
