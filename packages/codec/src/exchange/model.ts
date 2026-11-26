@@ -54,6 +54,20 @@ export interface DocumentRun {
   /** Protected dynamic field; no cached page number is editable source text. */
   field?: 'pageNumber';
   inlineImage?: Omit<DocumentImage, 'type' | 'id'>;
+  /** A footnote or endnote whose reference mark sits at this empty run. */
+  note?: DocumentNote;
+}
+/** Footnote or endnote text. Notes hold plain styled paragraphs: no review,
+ * comments, lists, hyperlinks, images, fields or nested notes. */
+export interface DocumentNote {
+  kind: 'footnote' | 'endnote';
+  paragraphs: DocumentNoteParagraph[];
+}
+export interface DocumentNoteParagraph {
+  type: 'paragraph';
+  id: string;
+  style: ParagraphStyle;
+  runs: Array<{ id: string; text: string; style: TextStyle }>;
 }
 export interface DocumentParagraph {
   type: 'paragraph';

@@ -54,6 +54,16 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 - Fix: packages the codec writes are re-validated with a 1,000,000-node budget,
   so exporting a long manuscript no longer fails the codec's own check.
 
+- Feature (`./exchange`): footnotes and endnotes. A reference is an empty run
+  with `note: { kind: 'footnote' | 'endnote', paragraphs }`; note paragraphs
+  hold plain styled text. Import reads Word's footnotes and endnotes parts
+  (instead of reporting `footnoteReference`/`endnoteReference` losses), and
+  `exportDocx` and `exportDocxSections` write them back, renumbering notes
+  across sections. Notes with tracked changes, comments, tables, drawings,
+  fields or content controls are dropped with a `NOTE_CONTENT_UNSUPPORTED`
+  loss; links and list formatting inside notes are dropped with
+  `NOTE_HYPERLINK` / `NOTE_LIST`. The root API is unchanged.
+
 #### Upgrade notes
 
 - Documents with `mailto:` (or `ftp:`, `file:` and similar) links used to be
@@ -68,6 +78,9 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   limit and fail with `DOCUMENT_XML_LIMIT`. Use `measureDocx` to check first,
   and pass `importDocx(bytes, { limits: { maxNodes } })` where your memory budget
   allows (roughly a few hundred bytes of heap per node).
+- `./exchange` imports now contain note runs (`run.note`) where Word documents
+  have footnotes or endnotes. Code that walks runs should keep or skip them;
+  `validateDocument` accepts them, and `exportDocx` writes them back.
 
 ## @hivemagnus/canvas-word-engine 1.2.1 - 2026-11-26
 

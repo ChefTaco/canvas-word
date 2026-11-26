@@ -109,6 +109,11 @@ any other external relationship (images, templates, themes, OLE objects)
 rejects the package with `UNSAFE_DOCUMENT_RELATIONSHIP`. Internal relationship
 targets may be percent-encoded.
 
+Footnotes and endnotes (`./exchange` only) are empty reference runs carrying
+`note: { kind: 'footnote' | 'endnote', paragraphs }`, where each note paragraph
+holds plain styled runs (no review, comments, lists, links, images or fields).
+Import and export map them to Word's own footnotes and endnotes parts.
+
 Long manuscripts can exceed the default 200,000-node limit for one XML part.
 Check with `measureDocx`, then raise only what is needed, for example
 `importDocx(bytes, { limits: { maxNodes: 1_000_000 } })`. Each limit is capped

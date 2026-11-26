@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createZipBuffer, type ZipEntry } from './zipArchive.js'
-import { type WordDocument, type DocumentChange, type DocumentParagraph, type TextStyle, type DocumentView, type ParagraphStyle, type DocumentBlock, visibleParagraph, visibleRun, runStyle, paragraphsOf, paragraphStyle, cellBlocks, paragraphBoundaryVisible } from './model.js'
+import { type WordDocument, type DocumentNote, type DocumentChange, type DocumentParagraph, type TextStyle, type DocumentView, type ParagraphStyle, type DocumentBlock, visibleParagraph, visibleRun, runStyle, paragraphsOf, paragraphStyle, cellBlocks, paragraphBoundaryVisible } from './model.js'
 import { bordersXml, shadingXml, marginsXml } from './appearance.js'
 import { validateStyles,type WordStyleDefinitions } from './styles.js'
 import { composeWordStories, type WordStories } from './stories.js'
@@ -39,6 +39,10 @@ function styleXml(style: TextStyle): string {
     style.verticalAlignment ? `<w:vertAlign w:val="${style.verticalAlignment}"/>` : '',
   ].join('')
 }
+/** Word's separator notes, which every footnotes/endnotes part starts with. */
+export const noteSeparators = (kind: 'footnote' | 'endnote') => `<w:${kind} w:type="separator" w:id="-1"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:separator/></w:r></w:p></w:${kind}><w:${kind} w:type="continuationSeparator" w:id="0"><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:continuationSeparator/></w:r></w:p></w:${kind}>`
+/** Settings entries that name the separator notes, as Word writes them. */
+export const noteSettings = (footnotes: boolean, endnotes: boolean) => (footnotes ? '<w:footnotePr><w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr>' : '') + (endnotes ? '<w:endnotePr><w:endnote w:id="-1"/><w:endnote w:id="0"/></w:endnotePr>' : '')
 /** Headless OOXML generation. No DOM, download, browser cookies or remote fetches. */
 export async function exportDocx(raw: WordDocument, mode: ExportMode, assets: Map<number, DocxAsset> = new Map(), ownedStories?:WordStories, definitions:WordStyleDefinitions={}, approvedFonts:WordEmbeddedFont[]=[]): Promise<Buffer> {
   validateStyles(definitions)
@@ -54,6 +58,8 @@ export async function exportDocx(raw: WordDocument, mode: ExportMode, assets: Ma
   if (fonts.files.length) relation('fontTable', 'fontTable.xml')
   let revisionId = 0; let drawingId = 0
   const media = new Set<string>()
+  const notes = { footnote: [] as string[], endnote: [] as string[] }
+  const plainText = (text: string) => text.split(/(\n|\t)/).map((part) => part === '\n' ? '<w:br/>' : part === '\t' ? '<w:tab/>' : part ? `<w:t xml:space="preserve">${xml(part)}</w:t>` : '').join('')
   const commentIds = new Map(document.comments.map((comment, index) => [comment.id, index]))
   const commentStarts = new Map<string, Array<{ id: number; offset: number }>>()
   const commentEnds = new Map<string, Array<{ id: number; offset: number }>>()
@@ -101,6 +107,11 @@ export async function exportDocx(raw: WordDocument, mode: ExportMode, assets: Ma
       style.alignment ? `<w:jc w:val="${style.alignment === 'justify' ? 'both' : style.alignment}"/>` : '',
       style.heading ? `<w:outlineLvl w:val="${style.heading - 1}"/>` : '',
     ].join('')
+  const noteXml = (note: DocumentNote, id: number): string => `<w:${note.kind} w:id="${id}">${note.paragraphs.map((block, index) => {
+    if (block.style.name && !/^Normal$|^Heading[1-6]$/.test(block.style.name) && !definitions[block.style.name]) throw new WordCodecError('EXPORT_STYLE_UNAVAILABLE', `Named style ${block.style.name} has no definition in this document.`, 409)
+    const mark = index === 0 ? `<w:r><w:rPr><w:vertAlign w:val="superscript"/></w:rPr><w:${note.kind}Ref/></w:r><w:r><w:t xml:space="preserve"> </w:t></w:r>` : ''
+    return `<w:p><w:pPr>${paragraphProperties(block.style, block.id)}</w:pPr>${mark}${block.runs.map((run) => `<w:r><w:rPr>${styleXml(run.style)}</w:rPr>${plainText(run.text)}</w:r>`).join('')}</w:p>`
+  }).join('')}</w:${note.kind}>`
   const imageRun = (block: { id: string; assetId: number; sha256: string; alt: string; width: number; height: number }): string => {
       const asset = assets.get(block.assetId)
       if (!asset || createHash('sha256').update(asset.bytes).digest('hex') !== block.sha256) throw new WordCodecError('EXPORT_ASSET_UNAVAILABLE', 'Verified image bytes are required for DOCX export.', 409)
@@ -160,7 +171,13 @@ export async function exportDocx(raw: WordDocument, mode: ExportMode, assets: Ma
         content += `<w:r><w:rPr>${styleXml(story==='main'?runStyle(run,document.changes,view):effectiveRunStyle(run,block))}${formatChange}</w:rPr>${textXml}</w:r>`
       }
       if (run.field === 'pageNumber') content += `<w:r><w:rPr>${styleXml(story==='main'?runStyle(run,document.changes,view):effectiveRunStyle(run,block))}</w:rPr><w:fldChar w:fldCharType="begin"/><w:instrText xml:space="preserve">PAGE</w:instrText><w:fldChar w:fldCharType="separate"/><w:fldChar w:fldCharType="end"/></w:r>`
-      if (!run.text && !run.inlineImage && !run.field) {const formatChange=native&&formatting?`<w:rPrChange w:id="${revisionId++}" w:author="${xml(formatting.importedAuthor??formatting.authorName)}" w:date="${formatting.createdAt}"><w:rPr>${styleXml(story==='main'?(previousRunStyle(formatting)):effectiveRunStyle(run,block,'original'))}</w:rPr></w:rPrChange>`:'';content+=`<w:r><w:rPr>${styleXml(story==='main'?runStyle(run,document.changes,view):effectiveRunStyle(run,block))}${formatChange}</w:rPr><w:${tag} xml:space="preserve"></w:${tag}></w:r>`}
+      if (run.note) {
+        if (story !== 'main') throw new WordCodecError('EXPORT_NOTE_STORY_UNSUPPORTED', 'Headers and footers cannot hold footnotes or endnotes.', 409)
+        const list = notes[run.note.kind]; const id = list.length + 1
+        list.push(noteXml(run.note, id))
+        content += `<w:r><w:rPr>${styleXml({ verticalAlignment: 'superscript', ...runStyle(run, document.changes, view) })}</w:rPr><w:${run.note.kind}Reference w:id="${id}"/></w:r>`
+      }
+      if (!run.text && !run.inlineImage && !run.field && !run.note) {const formatChange=native&&formatting?`<w:rPrChange w:id="${revisionId++}" w:author="${xml(formatting.importedAuthor??formatting.authorName)}" w:date="${formatting.createdAt}"><w:rPr>${styleXml(story==='main'?(previousRunStyle(formatting)):effectiveRunStyle(run,block,'original'))}</w:rPr></w:rPrChange>`:'';content+=`<w:r><w:rPr>${styleXml(story==='main'?runStyle(run,document.changes,view):effectiveRunStyle(run,block))}${formatChange}</w:rPr><w:${tag} xml:space="preserve"></w:${tag}></w:r>`}
       if (run.inlineImage) content += imageRun({ id: run.id, ...run.inlineImage })
       const hyperlink = effectiveRunStyle(run,block).hyperlink
       if (hyperlink) { const id = relation('hyperlink', hyperlink, true); content = `<w:hyperlink r:id="${id}">${content}</w:hyperlink>` }
@@ -204,19 +221,23 @@ export async function exportDocx(raw: WordDocument, mode: ExportMode, assets: Ma
   story = 'main'
   for (const name of ['header', 'footer'] as const) if (stories[name].length) files.push({ name: `word/_rels/${name}1.xml.rels`, content: `${declaration}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${stories[name].join('')}</Relationships>` })
   if (listKinds.length) files.push({ name: 'word/numbering.xml', content: `${declaration}<w:numbering xmlns:w="${w}">${['bullet', 'number'].map((kind, index) => `<w:abstractNum w:abstractNumId="${index}"><w:multiLevelType w:val="singleLevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="${kind === 'bullet' ? 'bullet' : 'decimal'}"/><w:lvlText w:val="${kind === 'bullet' ? '•' : '%1.'}"/><w:lvlJc w:val="left"/><w:pPr><w:tabs><w:tab w:val="num" w:pos="720"/></w:tabs><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl></w:abstractNum>`).join('')}${listKinds.map((kind, index) => `<w:num w:numId="${index + 1}"><w:abstractNumId w:val="${kind === 'bullet' ? 0 : 1}"/></w:num>`).join('')}</w:numbering>` })
+  for (const kind of ['footnote', 'endnote'] as const) if (notes[kind].length) {
+    relation(kind + 's', kind + 's.xml')
+    files.push({ name: `word/${kind}s.xml`, content: `${declaration}<w:${kind}s ${ns}>${noteSeparators(kind)}${notes[kind].join('')}</w:${kind}s>` })
+  }
   if (mode === 'retain-review' && document.comments.length) {
     relation('comments', 'comments.xml')
     files.push({ name: 'word/comments.xml', content: `${declaration}<w:comments xmlns:w="${w}">${document.comments.map((comment) => `<w:comment w:id="${commentIds.get(comment.id)}" w:author="${xml(comment.importedAuthor ?? comment.authorName)}" w:date="${comment.createdAt}"><w:p><w:r><w:t xml:space="preserve">${xml(comment.text)}</w:t></w:r></w:p></w:comment>`).join('')}</w:comments>` })
   }
   const [top, right, bottom, left] = document.layout.margins
   body.push(`<w:sectPr><w:headerReference w:type="default" r:id="${headerId}"/><w:footerReference w:type="default" r:id="${footerId}"/><w:pgSz w:w="${twips(document.layout.width)}" w:h="${twips(document.layout.height)}"${document.layout.width > document.layout.height ? ' w:orient="landscape"' : ''}/><w:pgMar w:top="${twips(top)}" w:right="${twips(right)}" w:bottom="${twips(bottom)}" w:left="${twips(left)}" w:header="${twips(document.layout.headerDistance??24)}" w:footer="${twips(document.layout.footerDistance??24)}" w:gutter="${twips(document.layout.gutter??0)}"/>${document.layout.columns ? `<w:cols w:num="${document.layout.columns.count}" w:space="${twips(document.layout.columns.gap)}" w:equalWidth="1"/>` : ''}</w:sectPr>`)
-  const overrides = ['document', 'styles', 'settings', 'comments', 'numbering'].filter((name) => (name !== 'comments' || mode === 'retain-review' && document.comments.length) && (name !== 'numbering' || listKinds.length)).map((name) => `<Override PartName="/word/${name}.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.${name === 'document' ? 'document.main' : name}+xml"/>`).join('')
+  const overrides = ['document', 'styles', 'settings', 'comments', 'numbering', 'footnotes', 'endnotes'].filter((name) => (name !== 'comments' || mode === 'retain-review' && document.comments.length) && (name !== 'numbering' || listKinds.length) && (name !== 'footnotes' || notes.footnote.length) && (name !== 'endnotes' || notes.endnote.length)).map((name) => `<Override PartName="/word/${name}.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.${name === 'document' ? 'document.main' : name}+xml"/>`).join('')
   files.push({ name: '[Content_Types].xml', content: `${declaration}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/>${overrides}${fonts.overrides}<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>` })
   files.push({ name: '_rels/.rels', content: `${declaration}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${r}/officeDocument" Target="word/document.xml"/></Relationships>` })
   files.push({ name: 'word/document.xml', content: `${declaration}<w:document ${ns}><w:body>${body.join('')}</w:body></w:document>` })
   const namedStyleXml=Object.entries(definitions).sort(([a],[b])=>a.localeCompare(b)).map(([id,definition])=>`<w:style w:type="${definition.kind??'paragraph'}" w:styleId="${xml(id)}"><w:name w:val="${xml(definition.label??id)}"/>${definition.basedOn?`<w:basedOn w:val="${xml(definition.basedOn)}"/>`:definition.kind==='character'&&definition.run.characterStyleId?`<w:basedOn w:val="${xml(definition.run.characterStyleId)}"/>`:''}${definition.kind==='character'?'':`<w:pPr>${paragraphProperties({...definition.paragraph,name:undefined,heading:undefined},'style:'+id)}${definition.paragraph.heading?`<w:outlineLvl w:val="${definition.paragraph.heading-1}"/>`:''}</w:pPr>`}<w:rPr>${styleXml(definition.kind==='character'?{...definition.run,characterStyleId:undefined}:definition.run)}</w:rPr></w:style>`).join('')
   files.push({ name: 'word/styles.xml', content: `${declaration}<w:styles xmlns:w="${w}">${document.defaults?`<w:docDefaults><w:rPrDefault><w:rPr>${styleXml(document.defaults.run)}</w:rPr></w:rPrDefault><w:pPrDefault><w:pPr>${paragraphProperties(document.defaults.paragraph,'defaults')}</w:pPr></w:pPrDefault></w:docDefaults>`:''}<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:rPr><w:rFonts w:ascii="${xml(document.layout.font)}" w:hAnsi="${xml(document.layout.font)}" w:eastAsia="${xml(document.layout.font)}" w:cs="${xml(document.layout.font)}"/><w:sz w:val="${Math.round(document.layout.fontSize * 1.5)}"/></w:rPr></w:style>${[1, 2, 3, 4, 5, 6].map((level) => `<w:style w:type="paragraph" w:styleId="Heading${level}"><w:name w:val="Heading ${level}"/><w:basedOn w:val="Normal"/><w:pPr><w:outlineLvl w:val="${level - 1}"/></w:pPr></w:style>`).join('')}${namedStyleXml}</w:styles>` })
-  files.push({ name: 'word/settings.xml', content: `${declaration}<w:settings xmlns:w="${w}">${mode === 'retain-review' ? '<w:trackRevisions/>' : ''}${document.compatibilityMode === undefined ? '' : `<w:compat><w:compatSetting w:val="${document.compatibilityMode}" w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word"/></w:compat>`}</w:settings>` })
+  files.push({ name: 'word/settings.xml', content: `${declaration}<w:settings xmlns:w="${w}">${mode === 'retain-review' ? '<w:trackRevisions/>' : ''}${noteSettings(notes.footnote.length > 0, notes.endnote.length > 0)}${document.compatibilityMode === undefined ? '' : `<w:compat><w:compatSetting w:val="${document.compatibilityMode}" w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word"/></w:compat>`}</w:settings>` })
   files.push({ name: 'word/_rels/document.xml.rels', content: `${declaration}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relationships.join('')}</Relationships>` })
   const bytes = await createZipBuffer(files); await validateDocxPackage(bytes,true); return bytes
 }

@@ -20,6 +20,8 @@ import {
   paragraphsOf,
   allBlocks,
   cellBlocks,
+  type DocumentNote,
+  type DocumentNoteParagraph,
 } from './model.js'
 import { validateDocument } from './validation.js'
 import { WordCodecError } from './errors.js'
@@ -70,8 +72,6 @@ export const UNSUPPORTED_WORD_FEATURES: Readonly<Record<string, string>> = Objec
   trPrChange: 'Table row revisions are not supported.',
   tcPrChange: 'Table cell revisions are not supported.',
   tblGridChange: 'Table grid revisions are not supported.',
-  footnoteReference: 'Footnotes are retained only in the original.',
-  endnoteReference: 'Endnotes are retained only in the original.',
   fldSimple: 'Advanced fields are imported as displayed text.',
   sdt: 'Content control behavior is retained only in the original.',
   object: 'Embedded objects are retained only in the preserved original.',
@@ -463,7 +463,7 @@ export async function importDocx(bytes: Buffer, options: DocxImportOptions = {})
         }
         if (element.namespaceURI === w && name === 'r') {
           const properties = child(element, 'rPr')
-          let text = ''; const segments: Array<{text: string; field?: 'pageNumber'; inlineImage?: Omit<Extract<DocumentBlock,{type:'image'}>,'type'|'id'>}> = []
+          let text = ''; const segments: Array<{text: string; field?: 'pageNumber'; inlineImage?: Omit<Extract<DocumentBlock,{type:'image'}>,'type'|'id'>; note?: DocumentNote}> = []
           const flushText = () => { if(text) segments.push({text}); text='' }
           if (pageFieldRuns.has(element)) segments.push({text:'',field:'pageNumber'})
           for (const value of Array.from(element.childNodes)) {
@@ -481,6 +481,11 @@ export async function importDocx(bytes: Buffer, options: DocxImportOptions = {})
               text += '\n'
             } else if (item.localName === 'drawing') {
               flushText(); if(item.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing','anchor').length) lose('FLOATING_DRAWING','Floating drawings become inline images.'); const value=image(item,part); if(value) {const inlineImage = { assetId: value.assetId, sha256: value.sha256, alt: value.alt, width: value.width, height: value.height };segments.push({text:'',inlineImage})}
+            } else if (item.localName === 'footnoteReference' || item.localName === 'endnoteReference') {
+              flushText()
+              const note = part === 'word/document.xml' ? readNote(item.localName === 'footnoteReference' ? 'footnote' : 'endnote', item.getAttributeNS(w, 'id')) : undefined
+              if (note) segments.push({ text: '', note })
+              else if (part !== 'word/document.xml') lose('NOTE_STORY_UNSUPPORTED', 'Footnote and endnote references outside the main text are retained only in the original.')
             } else if (item.localName === 'instrText' && !/^\s*PAGE\s*$/i.test(item.textContent ?? ''))
               lose(
                 'FIELD_INSTRUCTION',
@@ -495,6 +500,7 @@ export async function importDocx(bytes: Buffer, options: DocxImportOptions = {})
             text: segment.text,
             ...(segment.field ? {field:segment.field} : {}),
             ...(segment.inlineImage ? {inlineImage:segment.inlineImage} : {}),
+            ...(segment.note ? {note:segment.note} : {}),
             style: segment.inlineImage ? {} : {
               ...(block.style.name?{}:inherited),
               ...readRunStyle(properties,false),
@@ -581,6 +587,48 @@ export async function importDocx(bytes: Buffer, options: DocxImportOptions = {})
     raw && Number.isFinite(Date.parse(raw))
       ? new Date(raw).toISOString()
       : '1970-01-01T00:00:00.000Z'
+  const noteSources = new Map<'footnote' | 'endnote', { part: string; notes: Map<string, Element> }>()
+  const unsupportedNoteContent = ['ins', 'del', 'moveFrom', 'moveTo', 'rPrChange', 'pPrChange', 'commentRangeStart', 'commentRangeEnd', 'commentReference', 'tbl', 'drawing', 'pict', 'object', 'sdt', 'fldChar', 'fldSimple', 'footnoteReference', 'endnoteReference']
+  /** Convert one footnote or endnote into plain styled note paragraphs, or report why not. */
+  function readNote(kind: 'footnote' | 'endnote', id: string | null): DocumentNote | undefined {
+    let source = noteSources.get(kind)
+    if (!source) {
+      const relation = Array.from(relationships('word/document.xml').values()).find((item) => !item.external && item.type.endsWith('/' + kind + 's'))
+      const notes = new Map<string, Element>()
+      const bytes = relation ? files.get(relation.target) : undefined
+      if (bytes) for (const element of Array.from(parseDocumentXml(bytes).getElementsByTagNameNS(w, kind))) {
+        const type = element.getAttributeNS(w, 'type')
+        if (!type || type === 'normal') notes.set(element.getAttributeNS(w, 'id') ?? '', element)
+      }
+      source = { part: relation?.target ?? `word/${kind}s.xml`, notes }
+      noteSources.set(kind, source)
+    }
+    const element = id === null ? undefined : source.notes.get(id)
+    if (!element) { lose('NOTE_MISSING', 'A footnote or endnote reference has no note text and is dropped.'); return }
+    if (unsupportedNoteContent.some((name) => element.getElementsByTagNameNS(w, name).length)) {
+      lose('NOTE_CONTENT_UNSUPPORTED', 'Footnotes and endnotes with tracked changes, comments, tables, drawings, fields or content controls are retained only in the original; their reference is dropped.')
+      return
+    }
+    const paragraphs: DocumentNoteParagraph[] = []
+    for (const source_ of direct(element, 'p')) {
+      const block = paragraph(source_, source.part)
+      if (block.style.list) { delete block.style.list; lose('NOTE_LIST', 'List formatting inside footnotes and endnotes becomes plain paragraphs.') }
+      const runs = block.runs.filter((run) => !run.inlineImage && !run.field).map((run) => {
+        const style = { ...run.style }
+        if (style.hyperlink) { delete style.hyperlink; lose('NOTE_HYPERLINK', 'Links inside footnotes and endnotes are dropped; their text is kept.') }
+        return { id: run.id, text: run.text, style }
+      })
+      paragraphs.push({ type: 'paragraph', id: block.id, style: block.style, runs: runs.length ? runs : [{ id: randomUUID(), text: '', style: {} }] })
+    }
+    if (!paragraphs.length) paragraphs.push({ type: 'paragraph', id: randomUUID(), style: {}, runs: [{ id: randomUUID(), text: '', style: {} }] })
+    // Word separates the note mark from the note text with one space; export writes it again.
+    const lead = paragraphs[0]!
+    const first = lead.runs.find((run) => run.text)
+    if (first?.text.startsWith(' ')) first.text = first.text.slice(1)
+    // The note mark's own run converts to an empty run; drop empty runs beside text.
+    if (lead.runs.some((run) => run.text)) lead.runs = lead.runs.filter((run) => run.text)
+    return { kind, paragraphs }
+  }
   const image = (element: Element, part = 'word/document.xml'): Extract<DocumentBlock, {type: 'image'}> | null => {
     const inline = element.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing', 'inline').item(0)
     const effects = element.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing', 'effectExtent').item(0)
