@@ -11,7 +11,7 @@ license and copyright are retained in [LICENSE](LICENSE).
 | Upstream source pin | commit `948e6ac583f63efc48403e2a63a32456ee9c274c`, plus the six exact contribution heads listed below |
 | Closest published upstream | `@hufe921/canvas-editor` 1.0.5, base commit `f8435acb98badcc831174055e9001d42fe51bb0f` |
 | Original fork base | 1.0.4, commit `9af964c2f920da1fcc7d541fae4ab781fcd3bf02` |
-| Current source candidate | 1.2.1 |
+| Current source candidate | 1.2.2 |
 
 The scheduled `Upstream watch` workflow (`scripts/check-upstream.mjs`) compares
 these pins with upstream every week and keeps an issue open while upstream has
@@ -267,6 +267,20 @@ table cell text. It is rebuilt shortly after each content change, and the block
 holding the caret carries `aria-current="true"`. Blank lines are not mirrored.
 The option is off by default (`test/browser/render.test.ts`). Upstream status:
 not submitted.
+
+### 23. HTML import never reparses sanitized markup (1.2.2)
+
+Sanitized markup is converted from its nodes: headings, list items and table
+cells recurse with copies of their child nodes (`replaceHTMLElementTag` copies
+nodes too), never by assigning their serialized HTML to a live element, which
+could rebuild handlers the sanitizer removed. The sanitizer also drops SVG,
+MathML, `template` and raw-text elements (`xmp`, `noembed`, `noframes`,
+`plaintext`) and repeats until its output is stable under an inert
+serialize-and-parse round, returning nothing for markup that never settles.
+`createDomFromElementList` and the clipboard fallback no longer parse HTML
+strings in the live document either
+(`src/__tests__/clipboard-html-reparse.test.ts`,
+`test/browser/clipboard-reparse.test.ts`). Upstream status: not submitted.
 
 ### Packaging changes in this repository (1.0.0)
 

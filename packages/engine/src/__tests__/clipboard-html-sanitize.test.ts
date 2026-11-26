@@ -76,8 +76,10 @@ describe('clipboard HTML sanitization', () => {
     }
     // jsdom has no innerText, so check the anchors themselves rather than the
     // hyperlink elements built from their text.
+    // The SVG subtree, with its xlink anchor, is dropped entirely.
+    expect(root.querySelector('svg')).toBeNull();
     const anchors = Array.from(root.querySelectorAll('a'));
-    expect(anchors).toHaveLength(3);
+    expect(anchors).toHaveLength(2);
     for (const anchor of anchors) {
       expect(anchor.getAttribute('href') ?? '').toBe('');
       expect(anchor.getAttribute('xlink:href') ?? '').toBe('');
