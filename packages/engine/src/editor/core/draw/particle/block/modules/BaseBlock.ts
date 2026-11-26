@@ -275,7 +275,7 @@ export class BaseBlock {
   public render() {
     const block = this.element.block!
     if (block.type === BlockType.IFRAME) {
-      this.block = new IFrameBlock(this.element)
+      this.block = new IFrameBlock(this.element, this.options)
       this.block.render(this.blockItem)
     } else if (block.type === BlockType.VIDEO) {
       this.block = new VideoBlock(this.element)

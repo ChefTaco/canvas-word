@@ -5,6 +5,46 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
 ## Unreleased
 
+### @hivemagnus/canvas-word-engine
+
+- Security (breaking default): iframe blocks are sandboxed with
+  `allow-scripts` only, so script in a `srcdoc` (or same-origin `src`) iframe
+  block from document data (`setValue`, `executeInsertElementList`) runs in
+  an opaque origin and can no longer read or script the host
+  page. Previously the default was `allow-scripts allow-same-origin`, which
+  gave such content the host's origin. A document's own `iframeBlock.sandbox`
+  list can no longer combine `allow-scripts` with `allow-same-origin` (the
+  latter is dropped), malformed lists fall back to the default, and an empty
+  list now means the strictest sandbox instead of no sandbox.
+- Security: print copies of iframe blocks and iframes in `getHTML` and
+  clipboard output carry the same sandbox; print copies had none. The print
+  load signal now crosses the sandbox (`window.parent.postMessage`), content
+  using `__CUSTOM_CANVAS_EDITOR_LOAD_HOOK__` keeps working unchanged, and a
+  frame that never reports is given up after 10 seconds instead of blocking
+  the print.
+- New option `unsafeIframeAllowSameOrigin` (default `false`) restores the
+  previous sandbox for hosts whose documents are all trusted.
+
+#### Upgrade notes
+
+- Iframe block content now runs in an opaque origin: it has no access to the
+  host page, `parent`/`top` DOM, cookies, `localStorage` or IndexedDB, and the
+  host cannot read its document. A `snapDomFunction` that reads the frame's
+  document can no longer capture it, and edits made inside a `srcdoc` frame
+  are no longer copied back into `iframeBlock.srcdoc`. Messages posted from
+  the frame arrive with origin `"null"`; check `event.source` in host message
+  listeners. This also applies to `src` embeds from other sites: they no
+  longer keep their own origin's cookies and storage inside the editor (a
+  cross-origin URL can redirect to a same-origin one, so documents cannot
+  opt back in).
+- Hosts that need the old behaviour and load only trusted documents can pass
+  `unsafeIframeAllowSameOrigin: true`. It restores
+  `allow-scripts allow-same-origin` as the default and honours document
+  sandbox lists as given, which lets document content run with the host's
+  origin.
+- No data or storage migrations; serialized documents are unchanged.
+  Downgrading restores the previous sandbox.
+
 ## @hivemagnus/canvas-word-engine 1.3.0 - 2026-11-26
 
 Released from `main`. Includes the 1.2.2 security fix (HTML import never

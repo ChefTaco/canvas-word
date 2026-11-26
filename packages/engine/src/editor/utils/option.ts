@@ -226,6 +226,7 @@ export function mergeOption(
 
   return {
     imageSourceAllowed: null,
+    unsafeIframeAllowSameOrigin: false,
     mode: EditorMode.EDIT,
     locale: 'zhCN',
     defaultType: 'TEXT',

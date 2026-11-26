@@ -1,4 +1,5 @@
 import { imageSourceAllowed } from './imageSource'
+import { resolveIframeSandbox } from './iframeSandbox'
 import {
   cloneProperty,
   deepClone,
@@ -1527,7 +1528,10 @@ export function createDomFromElementList(
             element.block.iframeBlock || {}
           if (src || srcdoc) {
             const iframe = document.createElement('iframe')
-            iframe.sandbox.add(...(sandbox || IFrameBlock.sandbox))
+            iframe.setAttribute(
+              'sandbox',
+              resolveIframeSandbox(editorOptions, { sandbox }).join(' ')
+            )
             iframe.setAttribute('allow', [allow || IFrameBlock.allow].join(' '))
             iframe.style.display = 'block'
             iframe.style.border = 'none'
