@@ -3,6 +3,34 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
+## Unreleased
+
+### @hivemagnus/canvas-word-codec
+
+- Fix: a Word document with a `mailto:` or other non-HTTP(S) hyperlink no
+  longer fails to import. The link is dropped, its text is kept and the
+  conversion reports a `HYPERLINK_SCHEME_UNSUPPORTED` loss.
+- Fix: the root API now accepts external relationships only for hyperlinks,
+  like `./exchange`. External images, attached templates, OLE objects and
+  themes are rejected with `UNSAFE_DOCUMENT_RELATIONSHIP`.
+- Fix: percent-encoded relationship targets (`media/image%201.png`) resolve to
+  their package parts instead of being reported missing.
+- The root API and `./exchange` now share one implementation of package
+  validation, ZIP writing, hashing, theme resolution and `WordCodecError`, so
+  `instanceof WordCodecError` matches errors from either entry point. New
+  helpers: `resolveRelationshipTarget` and `isWebHyperlink`.
+
+#### Upgrade notes
+
+- Documents with `mailto:` (or `ftp:`, `file:` and similar) links used to be
+  rejected with `UNSAFE_DOCUMENT_RELATIONSHIP`; they now import with those links
+  removed and a `HYPERLINK_SCHEME_UNSUPPORTED` loss entry. Show losses to users
+  as before.
+- Root-API callers that imported documents with an external HTTP(S) image,
+  template or theme relationship now get `UNSAFE_DOCUMENT_RELATIONSHIP`
+  (the `THEME_UNAVAILABLE` and external-image losses no longer occur on import).
+  `./exchange` already behaved this way.
+
 ## @hivemagnus/canvas-word-engine 1.2.1 - 2026-11-26
 
 - Security: always parse pasted and `setHTML` HTML in an inert template and

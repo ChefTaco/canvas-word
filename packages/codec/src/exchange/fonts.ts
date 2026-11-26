@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
-import { parseDocumentXml } from './packageValidation.js'
+import { parseDocumentXml, resolveRelationshipTarget } from './packageValidation.js'
 import type { DocumentLayout } from './model.js'
 import type { ZipEntry } from './zipArchive.js'
 import { WordCodecError } from './errors.js'
@@ -29,7 +29,7 @@ export function readEmbeddedFonts(files: Map<string, Buffer>): WordEmbeddedFont[
     if (relation.getAttribute('Type') !== r + '/font' || relation.getAttribute('TargetMode') === 'External') throw new WordCodecError('FONT_RELATIONSHIP_UNSUPPORTED', 'Only local font relationships are supported.', 422)
     const id = relation.getAttribute('Id'); const target = relation.getAttribute('Target')
     if (!id || !target) throw new WordCodecError('FONT_RELATIONSHIP_INVALID', 'Font relationship is incomplete.', 422)
-    targets.set(id, target.startsWith('/') ? target.slice(1) : path.posix.normalize('word/' + target))
+    targets.set(id, resolveRelationshipTarget('word', target, files) ?? (target.startsWith('/') ? target.slice(1) : path.posix.normalize('word/' + target)))
   }
   const fonts: WordEmbeddedFont[] = []
   for (const element of Array.from(parseDocumentXml(table).getElementsByTagNameNS(w, 'font'))) {

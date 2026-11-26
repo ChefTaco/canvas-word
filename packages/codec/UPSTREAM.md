@@ -58,6 +58,7 @@ used. The fork uses bounded XML/ZIP parsers (`@xmldom/xmldom`, `saxes`,
 | source-identifier-and-table-fidelity | Report missing/duplicate property-revision IDs and unsupported table alignment; rebuilt OOXML receives unique identities. | `test/headless.test.js` | Not submitted |
 | page-field-cache-and-ambiguous-review | Map footer PAGE fields (including cached results and split instructions) to the page counter without keeping cached text; reject ambiguous run property revisions. | `test/headless.test.js` | Not submitted |
 | stable-story-round-trip (1.0.0) | A footer paragraph that held only the page counter is not imported as story text, and an exported footer adds an empty paragraph only when it has no content, so header/footer stories no longer grow on each export/import cycle. | `test/roundtrip-corpus.test.ts` | Not submitted |
+| external-link-policy | Only hyperlinks may be external relationships (both entry points); non-HTTP(S) hyperlinks are dropped with a `HYPERLINK_SCHEME_UNSUPPORTED` loss instead of rejecting the document; percent-encoded internal targets resolve to their parts. Root and `./exchange` share package validation. | `test/relationships.test.ts`, `test/themes.test.js` | Not submitted |
 | esm-package (1.0.0) | Published as an ES module with declarations and an `exports` map; `validateDocument` and `documentSchema` are exported. | `scripts/check-package.mjs` | Packaging only |
 
 ## Full-fidelity exchange entry (1.1.0)

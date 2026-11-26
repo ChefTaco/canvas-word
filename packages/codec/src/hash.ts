@@ -1,2 +1,2 @@
-import { createHash } from 'node:crypto';
-export const bytesSha256=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
+// Shared with the ./exchange entry point so fixes land once.
+export * from './exchange/hash.js';
