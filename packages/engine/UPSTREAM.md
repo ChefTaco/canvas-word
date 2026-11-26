@@ -268,6 +268,20 @@ holding the caret carries `aria-current="true"`. Blank lines are not mirrored.
 The option is off by default (`test/browser/render.test.ts`). Upstream status:
 not submitted.
 
+### 23. HTML import never reparses sanitized markup (1.2.2)
+
+Sanitized markup is converted from its nodes: headings, list items and table
+cells recurse with copies of their child nodes (`replaceHTMLElementTag` copies
+nodes too), never by assigning their serialized HTML to a live element, which
+could rebuild handlers the sanitizer removed. The sanitizer also drops SVG,
+MathML, `template` and raw-text elements (`xmp`, `noembed`, `noframes`,
+`plaintext`) and repeats until its output is stable under an inert
+serialize-and-parse round, returning nothing for markup that never settles.
+`createDomFromElementList` and the clipboard fallback no longer parse HTML
+strings in the live document either
+(`src/__tests__/clipboard-html-reparse.test.ts`,
+`test/browser/clipboard-reparse.test.ts`). Upstream status: not submitted.
+
 ### Packaging changes in this repository (1.0.0)
 
 - Published as an ES module bundle (`dist/canvas-word-engine.js`, CSS and

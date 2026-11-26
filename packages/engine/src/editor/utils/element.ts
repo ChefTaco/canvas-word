@@ -1376,6 +1376,15 @@ export function groupElementListByRowFlex(
   return elementListGroupList
 }
 
+// Moves built nodes into their container one by one; reparsing their
+// serialized HTML could change them, and spreading a long child list into one
+// append call can exceed the argument limit.
+function moveChildNodes(source: Node, target: Node) {
+  while (source.firstChild) {
+    target.appendChild(source.firstChild)
+  }
+}
+
 export function createDomFromElementList(
   elementList: IElement[],
   options?: IEditorOption
@@ -1411,6 +1420,9 @@ export function createDomFromElementList(
           colgroupDom.append(colDom)
         }
         tableDom.append(colgroupDom)
+        // Rows go in a tbody, as parsing the table markup would place them.
+        const tbodyDom = document.createElement('tbody')
+        tableDom.append(tbodyDom)
         // tr
         const trList = element.trList!
         for (let t = 0; t < trList.length; t++) {
@@ -1450,13 +1462,13 @@ export function createDomFromElementList(
               tdDom.style.borderLeft = tdBorderStyle
             }
             const childDom = createDomFromElementList(td.value!, options)
-            tdDom.innerHTML = childDom.innerHTML
+            moveChildNodes(childDom, tdDom)
             if (td.backgroundColor) {
               tdDom.style.backgroundColor = td.backgroundColor
             }
             trDom.append(tdDom)
           }
-          tableDom.append(trDom)
+          tbodyDom.append(trDom)
         }
         clipboardDom.append(tableDom)
       } else if (element.type === ElementType.HYPERLINK) {
@@ -1471,7 +1483,7 @@ export function createDomFromElementList(
           `h${titleOrderNumberMapping[element.level!]}`
         )
         const childDom = buildDom(element.valueList!)
-        h.innerHTML = childDom.innerHTML
+        moveChildNodes(childDom, h)
         clipboardDom.append(h)
       } else if (element.type === ElementType.LIST) {
         const list = document.createElement(
@@ -1486,7 +1498,7 @@ export function createDomFromElementList(
         listElementListMap.forEach(listElementList => {
           const li = document.createElement('li')
           const childDom = buildDom(listElementList)
-          li.innerHTML = childDom.innerHTML
+          moveChildNodes(childDom, li)
           list.append(li)
         })
         clipboardDom.append(list)
@@ -1558,7 +1570,7 @@ export function createDomFromElementList(
       } else if (element.type === ElementType.CONTROL) {
         const controlElement = document.createElement('span')
         const childDom = buildDom(element.control?.value || [])
-        controlElement.innerHTML = childDom.innerHTML
+        moveChildNodes(childDom, controlElement)
         clipboardDom.append(controlElement)
       } else if (element.type === ElementType.PAGE_BREAK) {
         const pageBreakElement = document.createElement('div')
@@ -1615,7 +1627,7 @@ export function createDomFromElementList(
       }
     }
     // 布局内容
-    rowFlexDom.innerHTML = buildDom(elementGroupRowFlex.data).innerHTML
+    moveChildNodes(buildDom(elementGroupRowFlex.data), rowFlexDom)
     // 未设置行布局时无需行布局容器
     if (!isDefaultRowFlex) {
       clipboardDom.append(rowFlexDom)
@@ -1673,8 +1685,13 @@ export function convertTextNodeToElement(
   return element
 }
 
-// Elements that can run script, load active content or redirect the page.
-const UNSAFE_CLIPBOARD_SELECTOR = 'script,noscript,iframe,frame,frameset,object,embed,applet,link,meta,base,portal,set,animate,animateMotion,animateTransform'
+// Elements that can run script, load active content or redirect the page, and
+// raw-text or template elements whose contents are not parsed as markup and so
+// can be reinterpreted when serialized and parsed again.
+const UNSAFE_CLIPBOARD_SELECTOR = 'script,noscript,iframe,frame,frameset,object,embed,applet,link,meta,base,portal,set,animate,animateMotion,animateTransform,template,xmp,noembed,noframes,plaintext'
+const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml'
+// Serialize/parse rounds after which unstable markup is rejected outright.
+const MAX_SANITIZE_ROUNDS = 4
 // Elements whose media sources restricted clients must not load.
 const RESTRICTED_MEDIA_SELECTOR = 'style,video,audio,source,track'
 // URL schemes that execute or render active content when navigated to.
@@ -1685,14 +1702,23 @@ function isUnsafeAttributeValue(value: string): boolean {
   return UNSAFE_URL_PATTERN.test(value.replace(/[\u0000-\u0020\u007f-\u009f]/g, ''))
 }
 
-export function sanitizeClipboardHTML(
-  htmlText: string,
-  options: { detachImageSources?: boolean } = {}
-): DocumentFragment {
-  const template = document.createElement('template')
-  template.innerHTML = htmlText
-  const content = template.content
+function sanitizeParsedFragment(
+  content: DocumentFragment,
+  options: { detachImageSources?: boolean }
+) {
   content.querySelectorAll(UNSAFE_CLIPBOARD_SELECTOR).forEach(node => node.remove())
+  // SVG and MathML change how their contents parse; markup that is inert in
+  // one namespace can become live HTML when parsed again, so drop them.
+  content.querySelectorAll('*').forEach(node => {
+    if (node.namespaceURI !== HTML_NAMESPACE) node.remove()
+  })
+  // A parsed HTML style element only ever holds CSS text; anything else is
+  // not a stylesheet.
+  content.querySelectorAll('style').forEach(node => {
+    if (node.children.length || /<\/style/i.test(node.textContent || '')) {
+      node.remove()
+    }
+  })
   if (options.detachImageSources) {
     content.querySelectorAll(RESTRICTED_MEDIA_SELECTOR).forEach(node => node.remove())
   }
@@ -1716,7 +1742,36 @@ export function sanitizeClipboardHTML(
       node.removeAttribute('src')
     }
   })
-  return content
+}
+
+function serializeFragment(content: DocumentFragment): string {
+  const template = document.createElement('template')
+  template.content.append(content.cloneNode(true))
+  return template.innerHTML
+}
+
+// Parses clipboard or setHTML markup in an inert template and removes anything
+// that can run script. The result is a fixed point: serializing it and parsing
+// it again (inertly) yields the same markup, so later serialization cannot
+// turn it into something the checks did not see. Callers must use the returned
+// nodes and never parse their serialization in the live document.
+export function sanitizeClipboardHTML(
+  htmlText: string,
+  options: { detachImageSources?: boolean } = {}
+): DocumentFragment {
+  let html = htmlText
+  for (let round = 0; round < MAX_SANITIZE_ROUNDS; round++) {
+    const template = document.createElement('template')
+    template.innerHTML = html
+    const content = template.content
+    sanitizeParsedFragment(content, options)
+    const serialized = serializeFragment(content)
+    if (serialized === html) return content
+    html = serialized
+  }
+  // Markup that keeps changing when parsed again is rejected rather than
+  // trusted.
+  return document.createDocumentFragment()
 }
 
 export interface IGetElementListByHTMLOption {
@@ -1724,8 +1779,35 @@ export interface IGetElementListByHTMLOption {
   imageSourceAllowed?: IEditorOption['imageSourceAllowed']
 }
 
+// Copies child nodes into a fragment without serializing them: parsing
+// serialized markup again could produce different, unsanitized nodes.
+function cloneChildNodes(parent: Node): DocumentFragment {
+  const fragment = document.createDocumentFragment()
+  parent.childNodes.forEach(child => fragment.append(child.cloneNode(true)))
+  return fragment
+}
+
 export function getElementListByHTML(
   htmlText: string,
+  options: IGetElementListByHTMLOption
+): IElement[] {
+  // Parse in an inert template and sanitize before connecting markup, whatever
+  // the options: live innerHTML would run inline handlers in the host origin.
+  // Restricted clients also retain image sources as data, never as live
+  // attributes, including nested table/list HTML.
+  return getElementListBySanitizedNodes(
+    sanitizeClipboardHTML(htmlText, {
+      detachImageSources: !!options.imageSourceAllowed
+    }),
+    options
+  )
+}
+
+// Converts nodes that sanitizeClipboardHTML produced. Nested headings, list
+// items and table cells recurse with copies of their nodes, never with their
+// serialized HTML.
+function getElementListBySanitizedNodes(
+  fragment: DocumentFragment,
   options: IGetElementListByHTMLOption
 ): IElement[] {
   const elementList: IElement[] = []
@@ -1761,8 +1843,10 @@ export function getElementListByHTML(
           }
         } else if (/H[1-6]/.test(node.nodeName)) {
           const hElement = node as HTMLTitleElement
-          const valueList = getElementListByHTML(
-            replaceHTMLElementTag(hElement, 'div').outerHTML,
+          const titleFragment = document.createDocumentFragment()
+          titleFragment.append(replaceHTMLElementTag(hElement, 'div'))
+          const valueList = getElementListBySanitizedNodes(
+            titleFragment,
             options
           )
           elementList.push({
@@ -1814,8 +1898,8 @@ export function getElementListByHTML(
               liClone
                 .querySelectorAll('ul,ol')
                 .forEach(nested => nested.remove())
-              const liValueList = getElementListByHTML(
-                liClone.innerHTML,
+              const liValueList = getElementListBySanitizedNodes(
+                cloneChildNodes(liClone),
                 options
               )
               liValueList.forEach(item => {
@@ -1919,8 +2003,8 @@ export function getElementListByHTML(
             }
             trElement.querySelectorAll('th,td').forEach(tdElement => {
               const tableCell = <HTMLTableCellElement>tdElement
-              const valueList = getElementListByHTML(
-                tableCell.innerHTML,
+              const valueList = getElementListBySanitizedNodes(
+                cloneChildNodes(tableCell),
                 options
               )
               const td: ITd = {
@@ -1998,13 +2082,7 @@ export function getElementListByHTML(
   document.body.appendChild(clipboardHost)
   const shadowRoot = clipboardHost.attachShadow({ mode: 'open' })
   const clipboardDom = document.createElement('div')
-  // Parse in an inert template and sanitize before connecting markup, whatever
-  // the options: live innerHTML would run inline handlers in the host origin.
-  // Restricted clients also retain image sources as data, never as live
-  // attributes, including nested table/list HTML.
-  clipboardDom.append(sanitizeClipboardHTML(htmlText, {
-    detachImageSources: !!options.imageSourceAllowed
-  }))
+  clipboardDom.append(fragment)
   shadowRoot.appendChild(clipboardDom)
   const deleteNodes: ChildNode[] = []
   clipboardDom.childNodes.forEach(child => {
@@ -2149,7 +2227,8 @@ export function replaceHTMLElementTag(
     const attr = oldDom.attributes[i]
     newDom.setAttribute(attr.name, attr.value)
   }
-  newDom.innerHTML = oldDom.innerHTML
+  // Copy the nodes rather than reparsing oldDom's serialized HTML.
+  newDom.append(cloneChildNodes(oldDom))
   return newDom
 }
 
