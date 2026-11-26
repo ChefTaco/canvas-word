@@ -11,7 +11,7 @@ license and copyright are retained in [LICENSE](LICENSE).
 | Upstream source pin | commit `948e6ac583f63efc48403e2a63a32456ee9c274c`, plus the six exact contribution heads listed below |
 | Closest published upstream | `@hufe921/canvas-editor` 1.0.5, base commit `f8435acb98badcc831174055e9001d42fe51bb0f` |
 | Original fork base | 1.0.4, commit `9af964c2f920da1fcc7d541fae4ab781fcd3bf02` |
-| Current source candidate | 1.2.0 |
+| Current source candidate | 1.2.1 |
 
 The source pin includes merged PR 1492, which is not yet verified in a published
 upstream package. The complete runtime source delta from the 1.0.4 base is
@@ -241,7 +241,7 @@ A deferred focus request is dropped when focus has moved elsewhere (for example
 to a toolbar) or the editor was destroyed in the meantime. Upstream status: not
 submitted.
 
-### 21. Sanitized HTML paste and `setHTML`
+### 21. Sanitized HTML paste and `setHTML` (1.2.1)
 
 Pasted and `setHTML` markup is always parsed in an inert `<template>` before it
 is connected to the document, whatever the options. Script-bearing and

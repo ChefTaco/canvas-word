@@ -114,9 +114,8 @@ MIT. Upstream copyright is retained in [LICENSE](LICENSE); see
 
 ## Full-fidelity exchange source candidate
 
-The unreleased 1.1.0 source also exposes `@hivemagnus/canvas-word-codec/exchange`,
+Since 1.1.0 the codec also exposes `@hivemagnus/canvas-word-codec/exchange`,
 which preserves the final PR 46 model for embedded fonts, nested table blocks,
 section presentation and precise review snapshots. Its decoded model is richer
 than the stable root API; choose that entry explicitly rather than treating the
-two models as interchangeable. The existing root API and published 1.0.1 remain
-compatible. See [UPSTREAM.md](UPSTREAM.md) for exact source and test evidence.
+two models as interchangeable. The root API remains compatible with 1.0.1. See [UPSTREAM.md](UPSTREAM.md) for exact source and test evidence.

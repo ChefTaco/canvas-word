@@ -1,6 +1,6 @@
 {
   "name": "@hivemagnus/canvas-word-codec",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Headless DOCX codec: Word bytes to and from a neutral exchange document (maintained MIT fork of the canvas-editor DOCX plugin)",
   "keywords": [
     "docx",
