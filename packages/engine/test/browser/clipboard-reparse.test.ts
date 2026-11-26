@@ -23,13 +23,14 @@ const PAYLOADS = [
   `<math><mi><style><img src=x onerror=${handler}></style></mi></math>`,
   `<noscript><p title="</noscript><img src=x onerror=${handler}>"></noscript>`,
 ];
-const WRAPPERS = [
-  ...[1, 2, 3, 4, 5, 6].map((level) => `<h${level}>%</h${level}>`),
-  '<ul><li>%</li></ul>',
-  '<table><tr><td>%</td></tr></table>',
-  '<table><tr><td><h2>%</h2></td></tr></table>',
-  '%',
+const WRAPPERS: Array<(payload: string) => string> = [
+  ...[1, 2, 3, 4, 5, 6].map((level) => (payload: string) => `<h${level}>${payload}</h${level}>`),
+  (payload) => `<ul><li>${payload}</li></ul>`,
+  (payload) => `<table><tr><td>${payload}</td></tr></table>`,
+  (payload) => `<table><tr><td><h2>${payload}</h2></td></tr></table>`,
+  (payload) => payload,
 ];
+const DOCUMENTS = WRAPPERS.flatMap((wrap) => PAYLOADS.map((payload) => `<p>before</p>${wrap(payload)}<p>after</p>`));
 
 let browser: Browser;
 let tab: Page;
@@ -72,20 +73,18 @@ describe('HTML import against reparse (mutation) XSS in Chromium', () => {
 
   it('never runs them through getElementListByHTML, with or without an image source policy', async () => {
     const result = await tab.evaluate(
-      async ({ payloads, wrappers }) => {
+      async (documents) => {
         const { getElementListByHTML } = (window as any).canvasWord;
         (window as any).__reparsed = 0;
         let converted = 0;
-        for (const wrapper of wrappers)
-          for (const payload of payloads) {
-            const html = `<p>before</p>${wrapper.replace('%', payload)}<p>after</p>`;
-            converted += getElementListByHTML(html, { innerWidth: 500 }).length;
-            converted += getElementListByHTML(html, { innerWidth: 500, imageSourceAllowed: () => true }).length;
-          }
+        for (const html of documents) {
+          converted += getElementListByHTML(html, { innerWidth: 500 }).length;
+          converted += getElementListByHTML(html, { innerWidth: 500, imageSourceAllowed: () => true }).length;
+        }
         await new Promise((resolve) => setTimeout(resolve, 500));
         return { fired: (window as any).__reparsed, converted };
       },
-      { payloads: PAYLOADS, wrappers: WRAPPERS },
+      DOCUMENTS,
     );
     expect(result.converted).toBeGreaterThan(0);
     expect(result.fired).toBe(0);
