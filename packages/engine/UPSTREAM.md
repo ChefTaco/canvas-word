@@ -241,6 +241,16 @@ A deferred focus request is dropped when focus has moved elsewhere (for example
 to a toolbar) or the editor was destroyed in the meantime. Upstream status: not
 submitted.
 
+### 21. Sanitized HTML paste and `setHTML`
+
+Pasted and `setHTML` markup is always parsed in an inert `<template>` before it
+is connected to the document, whatever the options. Script-bearing and
+active-content elements, inline event handlers, `srcdoc`/`formaction` and
+attributes carrying `javascript:`-style or HTML `data:` URLs are removed first.
+The image-source predicate still decides only whether image sources stay live
+(`src/__tests__/clipboard-html-sanitize.test.ts`). Upstream status: not
+submitted.
+
 ### Packaging changes in this repository (1.0.0)
 
 - Published as an ES module bundle (`dist/canvas-word-engine.js`, CSS and
