@@ -5,6 +5,17 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
 ## Unreleased
 
+### @hivemagnus/canvas-word-engine
+
+- `./testing` now resolves to its own small entry (`dist/testing.js`) that
+  re-exports the diagnostic hooks from the main bundle, instead of pointing at
+  the main bundle itself. Importing those hooks from the main entry still works
+  but is deprecated and ends in the next major version.
+- Publish a minified build with a source map beside the readable bundle:
+  `@hivemagnus/canvas-word-engine/min` (`dist/canvas-word-engine.min.js` and
+  `.map`), recorded in `dist/build-manifest.json`. The readable bundle is
+  unchanged.
+
 ### @hivemagnus/canvas-word-codec
 
 - Fix: a Word document with a `mailto:` or other non-HTTP(S) hyperlink no

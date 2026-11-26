@@ -32,9 +32,13 @@
       "default": "./dist/canvas-word-engine.js"
     },
     "./package.json": "./package.json",
+    "./min": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/canvas-word-engine.min.js"
+    },
     "./testing": {
       "types": "./dist/types/testing.d.ts",
-      "default": "./dist/canvas-word-engine.js"
+      "default": "./dist/testing.js"
     }
   },
   "publishConfig": {
@@ -49,7 +53,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node scripts/finalize-types.mjs && vite build",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node scripts/finalize-types.mjs && vite build && vite build --mode min && node scripts/finalize-bundle.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --project unit --project upstream",
     "test:browser": "vitest run --project browser"

@@ -56,7 +56,9 @@ regressions use the existing assertions adapted for persistent glyph IDs.
 Native device, actual screen-reader and application release acceptance remain
 separate from these package checks.
 
-The `./testing` export supplies diagnostic hooks from the same runtime bundle.
+The `./testing` export (`dist/testing.js`) re-exports the diagnostic hooks from the
+main runtime bundle, so fixtures share its module instance. A minified build with a
+source map (`./min`) is published beside the readable bundle.
 Applications use the main entry; integration fixtures can exercise the installed
 package without reaching into a second source checkout.
 

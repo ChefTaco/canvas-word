@@ -5,7 +5,24 @@ import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 // Builds one self-contained ES module (CSS and workers inlined) and records the
 // emitted module graph plus the SHA-256 of the final bytes in dist/build-manifest.json.
-export default defineConfig({
+// `vite build --mode min` builds the same module minified, with a source map,
+// as canvas-word-engine.min.js and adds it to the same manifest.
+export default defineConfig(({ mode }) => {
+const minified = mode === 'min';
+const fileName = minified ? 'canvas-word-engine.min.js' : 'canvas-word-engine.js';
+const manifestFile = new URL('./dist/build-manifest.json', import.meta.url);
+type Output = { filename: string; sha256: string };
+// Keep entries written by the other build of the same version.
+const previous = (): Output[] => {
+  try {
+    const manifest = JSON.parse(readFileSync(manifestFile, 'utf8')) as { version: string; outputs: Output[] };
+    const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
+    return manifest.version === version ? manifest.outputs.filter((output) => output.filename !== fileName) : [];
+  } catch {
+    return [];
+  }
+};
+return {
   plugins: [
     cssInjectedByJsPlugin(),
     {
@@ -25,13 +42,13 @@ export default defineConfig({
           throw new Error('The engine bundle unexpectedly has external runtime chunks.');
         mkdirSync(new URL('./dist/', import.meta.url), { recursive: true });
         writeFileSync(
-          new URL('./dist/build-manifest.json', import.meta.url),
+          manifestFile,
           JSON.stringify(
             {
               schemaVersion: 1,
               version: JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
                 .version,
-              outputs,
+              outputs: [...previous(), ...outputs].sort((a, b) => a.filename.localeCompare(b.filename)),
             },
             null,
             2,
@@ -42,11 +59,11 @@ export default defineConfig({
         order: 'post',
         sequential: true,
         handler() {
-          const file = new URL('./dist/build-manifest.json', import.meta.url);
+          const file = manifestFile;
           const manifest = JSON.parse(readFileSync(file, 'utf8')) as {
             outputs: Array<{ filename: string; sha256: string }>;
           };
-          for (const output of manifest.outputs)
+          for (const output of manifest.outputs.filter((entry) => entry.filename === fileName))
             output.sha256 = createHash('sha256')
               .update(readFileSync(new URL(`./dist/${output.filename}`, import.meta.url)))
               .digest('hex');
@@ -57,7 +74,9 @@ export default defineConfig({
   ],
   build: {
     emptyOutDir: false,
-    lib: { entry: 'src/index.ts', formats: ['es'], fileName: () => 'canvas-word-engine.js' },
+    lib: { entry: 'src/index.ts', formats: ['es'], fileName: () => fileName },
     target: 'es2022',
+    ...(minified ? { minify: true, sourcemap: true, rolldownOptions: { output: { minify: true } } } : {}),
   },
+};
 });

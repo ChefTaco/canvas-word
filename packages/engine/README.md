@@ -70,7 +70,18 @@ range restoration, mixed-direction story table, explicit line-height, table
 padding/row-keep and paragraph-flow APIs. See [UPSTREAM.md](UPSTREAM.md) for exact
 contribution heads, capability limits and validation. The original
 `executeSetExternalElementBindings` and `paragraphLayout` contracts remain available.
-Diagnostic fixtures may import `./testing` to exercise the installed bundle.
+Diagnostic fixtures may import `./testing` to exercise the installed bundle; it
+re-exports the hooks from the main bundle, so they share one module instance.
+The main entry still re-exports them for compatibility, but that is deprecated
+and ends in the next major version.
+
+### Bundles
+
+`dist/canvas-word-engine.js` is the readable bundle (`.`). The same module is
+also published minified, with a source map, as
+`@hivemagnus/canvas-word-engine/min` (`dist/canvas-word-engine.min.js`), for
+pages that load the engine directly instead of through a bundler. Both are
+recorded with their SHA-256 in `dist/build-manifest.json`.
 
 The rest of the API (commands, events, options, plugins) is upstream
 canvas-editor's; see its [documentation](https://hufe.club/canvas-editor-docs/).

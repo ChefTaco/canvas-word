@@ -22,9 +22,9 @@ const packages = [
   {
     dir: 'packages/engine',
     tarball: /^hivemagnus-canvas-word-engine-\d[\w.-]*\.tgz$/,
-    allowed: [/^dist\/canvas-word-engine\.js$/, /^dist\/build-manifest\.json$/, /^dist\/types\/.+\.d\.ts$/, /^notices\/[\w.-]+$/,
+    allowed: [/^dist\/canvas-word-engine(?:\.min)?\.js$/, /^dist\/canvas-word-engine\.min\.js\.map$/, /^dist\/testing\.js$/, /^dist\/build-manifest\.json$/, /^dist\/types\/.+\.d\.ts$/, /^notices\/[\w.-]+$/,
       /^(?:LICENSE|NOTICES\.md|UPSTREAM\.md|README\.md|package\.json)$/],
-    required: ['dist/canvas-word-engine.js', 'dist/types/index.d.ts', 'LICENSE', 'NOTICES.md', 'UPSTREAM.md', 'README.md'],
+    required: ['dist/canvas-word-engine.js', 'dist/canvas-word-engine.min.js', 'dist/canvas-word-engine.min.js.map', 'dist/testing.js', 'dist/types/index.d.ts', 'dist/types/testing.d.ts', 'LICENSE', 'NOTICES.md', 'UPSTREAM.md', 'README.md'],
   },
   {
     dir: 'packages/codec',
@@ -129,8 +129,16 @@ try {
   const resolved = (await run(process.execPath, ['--input-type=module', '-e',
     "console.log(import.meta.resolve('@hivemagnus/canvas-word-engine'))"], { cwd: install })).trim();
   if (!resolved.endsWith('/node_modules/@hivemagnus/canvas-word-engine/dist/canvas-word-engine.js')) throw new Error('engine export map does not resolve');
+  for (const [subpath, file] of [['min', 'canvas-word-engine.min.js'], ['testing', 'testing.js']]) {
+    const target = (await run(process.execPath, ['--input-type=module', '-e',
+      `console.log(import.meta.resolve('@hivemagnus/canvas-word-engine/${subpath}'))`], { cwd: install })).trim();
+    if (!target.endsWith(`/node_modules/@hivemagnus/canvas-word-engine/dist/${file}`)) throw new Error(`engine ./${subpath} export does not resolve`);
+  }
   await writeFile(join(install, 'consumer.ts'), `
     import Editor, { EditorMode, ElementType, type IEditorResult, type IElement } from '@hivemagnus/canvas-word-engine';
+    import MinifiedEditor from '@hivemagnus/canvas-word-engine/min';
+    import { Draw, mergeOption } from '@hivemagnus/canvas-word-engine/testing';
+    export const entries: unknown[] = [MinifiedEditor === Editor, Draw, mergeOption];
     import { exportDocx, importDocx, type WordDocument } from '@hivemagnus/canvas-word-codec';
     const element: IElement = { type: ElementType.TEXT, value: 'x', id: 'run-1', externalId: 'run-1' };
     export function mount(container: HTMLDivElement): IEditorResult {
