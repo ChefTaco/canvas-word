@@ -41,6 +41,7 @@ describe('footnotes and endnotes', () => {
     expect(files.get('word/document.xml')!.toString()).toContain('<w:footnoteReference w:id="1"/>');
     expect(files.get('word/document.xml')!.toString()).toContain('<w:endnoteReference w:id="1"/>');
     expect(files.get('[Content_Types].xml')!.toString()).toContain('wordprocessingml.footnotes+xml');
+    expect(files.get('word/settings.xml')!.toString()).toContain('<w:footnotePr><w:footnote w:id="-1"/>');
     expect(files.get('word/_rels/document.xml.rels')!.toString()).toMatch(/relationships\/endnotes" Target="endnotes.xml"/);
     const first = await importDocx(bytes);
     const imported = notesOf(first.document);
@@ -86,6 +87,7 @@ describe('footnotes and endnotes', () => {
     expect([...body.matchAll(/<w:footnoteReference w:id="(\d+)"\/>/g)].map((match) => match[1])).toEqual(['1', '2']);
     expect([...body.matchAll(/<w:endnoteReference w:id="(\d+)"\/>/g)].map((match) => match[1])).toEqual(['1', '2']);
     expect([...files.keys()].filter((name) => /notes\.xml$/.test(name)).sort()).toEqual(['word/endnotes.xml', 'word/footnotes.xml']);
+    expect(files.get('word/settings.xml')!.toString()).toContain('<w:endnotePr>');
     const result = await importDocx(bytes);
     const all = result.sections.flatMap((section) => notesOf(section.document));
     expect(all.map((run) => run.note.kind)).toEqual(['footnote', 'endnote', 'footnote', 'endnote']);

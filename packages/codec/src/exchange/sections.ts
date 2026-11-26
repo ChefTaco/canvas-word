@@ -1,5 +1,5 @@
 import { XMLSerializer, type Element } from '@xmldom/xmldom'
-import { exportDocx, noteSeparators, type ExportMode } from './export.js'
+import { exportDocx, noteSeparators, noteSettings, type ExportMode } from './export.js'
 import type { WordDocument } from './model.js'
 import type { DocxAsset } from './export.js'
 import type { WordStories } from './stories.js'
@@ -358,7 +358,7 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
   })
   files.push({
     name: 'word/settings.xml',
-    content: `${declaration}<w:settings xmlns:w="${w}">${mode === 'retain-review' ? '<w:trackRevisions/>' : ''}${input.sections[0]?.document.compatibilityMode === undefined ? '' : `<w:compat><w:compatSetting w:val="${input.sections[0].document.compatibilityMode}" w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word"/></w:compat>`}</w:settings>`,
+    content: `${declaration}<w:settings xmlns:w="${w}">${mode === 'retain-review' ? '<w:trackRevisions/>' : ''}${noteSettings(notes.footnote.length > 0, notes.endnote.length > 0)}${input.sections[0]?.document.compatibilityMode === undefined ? '' : `<w:compat><w:compatSetting w:val="${input.sections[0].document.compatibilityMode}" w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word"/></w:compat>`}</w:settings>`,
   })
   const bytes = await createZipBuffer(files)
   await validateDocxPackage(bytes, true)
