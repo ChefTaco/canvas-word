@@ -91,7 +91,7 @@ async function main() {
     return response.json();
   };
   const npm = async (name) => {
-    const response = await fetch(`https://registry.npmjs.org/${name.replace('/', '%2F')}`, { headers: { accept: 'application/vnd.npm.install-v1+json' } });
+    const response = await fetch(`https://registry.npmjs.org/${name.replaceAll('/', '%2F')}`, { headers: { accept: 'application/vnd.npm.install-v1+json' } });
     if (!response.ok) throw new Error(`npm registry returned ${response.status} for ${name}.`);
     return response.json();
   };
