@@ -138,7 +138,9 @@ try {
     import Editor, { EditorMode, ElementType, type IEditorResult, type IElement } from '@hivemagnus/canvas-word-engine';
     import MinifiedEditor from '@hivemagnus/canvas-word-engine/min';
     import { Draw, mergeOption } from '@hivemagnus/canvas-word-engine/testing';
-    export const entries: unknown[] = [MinifiedEditor === Editor, Draw, mergeOption];
+    // @ts-expect-error since 2.0.0 the diagnostic hooks are only exported from ./testing
+    import { Draw as RemovedDraw } from '@hivemagnus/canvas-word-engine';
+    export const entries: unknown[] = [MinifiedEditor === Editor, Draw, mergeOption, RemovedDraw];
     import { exportDocx, importDocx, type WordDocument } from '@hivemagnus/canvas-word-codec';
     const element: IElement = { type: ElementType.TEXT, value: 'x', id: 'run-1', externalId: 'run-1' };
     export function mount(container: HTMLDivElement): IEditorResult {

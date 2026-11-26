@@ -70,10 +70,12 @@ range restoration, mixed-direction story table, explicit line-height, table
 padding/row-keep and paragraph-flow APIs. See [UPSTREAM.md](UPSTREAM.md) for exact
 contribution heads, capability limits and validation. The original
 `executeSetExternalElementBindings` and `paragraphLayout` contracts remain available.
-Diagnostic fixtures may import `./testing` to exercise the installed bundle; it
-re-exports the hooks from the main bundle, so they share one module instance.
-The main entry still re-exports them for compatibility, but that is deprecated
-and ends in the next major version.
+Diagnostic fixtures may import `./testing` (`Draw`, `Previewer`,
+`HyperlinkParticle`, `mergeOption`, `EDITOR_CLIPBOARD`, and the `IRow` and
+`IElementPosition` types) to exercise the installed bundle; it takes the hooks
+from the main bundle, so they share one module instance. Since 2.0.0 the main
+entry no longer exports them, except `EDITOR_CLIPBOARD`, which is part of the
+editor's public API.
 
 ### Screen readers
 

@@ -74,7 +74,7 @@ return {
   ],
   build: {
     emptyOutDir: false,
-    lib: { entry: 'src/index.ts', formats: ['es'], fileName: () => fileName },
+    lib: { entry: 'src/bundle.ts', formats: ['es'], fileName: () => fileName },
     target: 'es2022',
     ...(minified ? { minify: true, sourcemap: true, rolldownOptions: { output: { minify: true } } } : {}),
   },

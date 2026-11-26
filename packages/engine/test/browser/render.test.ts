@@ -1,7 +1,8 @@
 // Headless render smoke test of the built bundle. Uses an installed Chromium through
 // Playwright; the bundle is served from dist/ through request interception, so no server
 // or network access is needed. Run `npm run build` first. The readable and the minified
-// bundle run the same checks; `./testing` must re-export from the main bundle instance.
+// bundle run the same checks; `./testing` must use the main bundle instance, and the main
+// entry no longer exports its hooks.
 import { existsSync, readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, type Browser, type Page } from 'playwright';
@@ -12,9 +13,24 @@ const bundles = ['canvas-word-engine.js', 'canvas-word-engine.min.js'] as const;
 const page = (bundle: string) => `<!doctype html><html><head><meta charset="utf-8"></head>
 <body><div id="editor" style="width: 820px"></div>
 <script type="module">
-  import Editor, { EditorMode, ElementType, Draw as MainDraw } from '/${bundle}';
-  const testing = ${bundle === 'canvas-word-engine.js' ? "await import('/testing.js')" : 'undefined'};
-  window.canvasWord = { Editor, EditorMode, ElementType, sharedTesting: testing ? testing.Draw === MainDraw : true };
+  import * as main from '/${bundle}';
+  const { default: Editor, EditorMode, ElementType } = main;
+  // Patching a ./testing class must reach the editor the main bundle creates.
+  let sharedTesting = true;
+  if (${bundle === 'canvas-word-engine.js'}) {
+    const { Draw } = await import('/testing.js');
+    const compute = Draw.prototype.computeRowList;
+    let calls = 0;
+    Draw.prototype.computeRowList = function (...args) { calls++; return compute.apply(this, args); };
+    const probe = document.createElement('div');
+    document.body.append(probe);
+    new Editor(probe, [{ value: 'probe' }]).destroy();
+    probe.remove();
+    Draw.prototype.computeRowList = compute;
+    sharedTesting = calls > 0;
+  }
+  const hooks = ['Draw', 'Previewer', 'HyperlinkParticle', 'mergeOption'];
+  window.canvasWord = { Editor, EditorMode, ElementType, sharedTesting, mainHooks: hooks.filter((name) => name in main) };
   window.dispatchEvent(new Event('canvas-word-ready'));
 </script></body></html>`;
 
@@ -60,6 +76,10 @@ describe.each(bundles)('engine render smoke test (%s)', (bundle) => {
 
   it('serves ./testing from the main bundle instance', async () => {
     expect(await tab.evaluate(() => (window as any).canvasWord.sharedTesting)).toBe(true);
+  });
+
+  it('no longer exports the diagnostic hooks from the main entry', async () => {
+    expect(await tab.evaluate(() => (window as any).canvasWord.mainHooks)).toEqual([]);
   });
 
   it('renders paginated canvas pages with visible content in read-only mode', async () => {
