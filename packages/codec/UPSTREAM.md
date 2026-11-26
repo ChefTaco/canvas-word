@@ -9,7 +9,7 @@ codec. The upstream MIT license and copyright are retained in [LICENSE](LICENSE)
 | Upstream repository | <https://github.com/Hufe921/canvas-editor-plugin> (`packages/docx`) |
 | Fork base | `@hufe921/canvas-editor-plugin-docx` 1.0.0, commit `4741a9f8885d57fde1704d39a7aa930aeadc51e6` |
 | Current upstream snapshot | plugin monorepo commit `0e8a1b36c8e94061edc19ce05b93c12fbad03b34` (includes merged optional-download PR 45) |
-| Current source candidate | 1.1.0 |
+| Current source candidate | 1.1.1 |
 
 The repository keeps both upstream snapshots as provenance (they are not
 published or built):

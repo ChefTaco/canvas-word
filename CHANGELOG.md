@@ -3,18 +3,26 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
-## Unreleased
-
-### @hivemagnus/canvas-word-engine
+## @hivemagnus/canvas-word-engine 1.2.1 - 2026-11-26
 
 - Security: always parse pasted and `setHTML` HTML in an inert template and
   strip scripts, inline event handlers and active URLs before it reaches the
   document, also when no `imageSourceAllowed` policy is set. The policy still
   controls only whether image sources stay live.
+- Build and test with Node.js 24.22.3+ or 26.13.1+, matching the rest of the suite.
 
-### Both packages
+### Upgrade notes
 
-- Require Node.js 24.22.3+ or 26.13.1+, matching the rest of the suite.
+- HTML inserted through paste or `setHTML` no longer keeps scripts, frames,
+  objects and embeds, `meta`/`base`/`link` elements, inline
+  event handlers (`on*`), `srcdoc`/`formaction` attributes or `javascript:`-style
+  and HTML `data:` URLs, even without an `imageSourceAllowed` policy. Content
+  that relied on them now arrives without them.
+
+## @hivemagnus/canvas-word-codec 1.1.1 - 2026-11-26
+
+- Require Node.js 24.22.3+ or 26.13.1+ (`engines`), matching the rest of the
+  suite. Conversion behavior is unchanged.
 
 ## @hivemagnus/canvas-word-engine 1.2.0
 
