@@ -124,6 +124,42 @@ describe.each(bundles)('engine render smoke test (%s)', (bundle) => {
     expect(ids).toEqual(expect.arrayContaining(['a', 'b', 'p1-mark', 'c']));
   });
 
+  it('mirrors headings, paragraphs, lists and tables off-screen and marks the caret paragraph', async () => {
+    const result = await tab.evaluate(async () => {
+      const { Editor, ElementType } = (window as any).canvasWord;
+      const container = document.getElementById('editor') as HTMLDivElement;
+      const main = [
+        { type: ElementType.TITLE, level: 'first', valueList: [{ value: 'Chapter One' }] },
+        { value: '\nThe keeper climbed the tower.' },
+        { value: '\nGulls argued over nets.' },
+        { type: ElementType.LIST, listType: 'ol', valueList: [{ value: 'first step\nsecond step' }] },
+        { type: ElementType.TABLE, value: '', colgroup: [{ width: 200 }, { width: 200 }], trList: [{ height: 40, tdList: [
+          { colspan: 1, rowspan: 1, value: [{ value: 'Cell A' }] }, { colspan: 1, rowspan: 1, value: [{ value: 'Cell B' }] },
+        ] }] },
+      ];
+      const editor = new Editor(container, main, { locale: 'en', accessibility: { disabled: false, textMirror: true } });
+      const wait = () => new Promise((resolve) => setTimeout(resolve, 150));
+      await wait();
+      const mirror = container.querySelector('[role="document"]')!;
+      const outline = [...mirror.children].map((child) => child.tagName.toLowerCase() + ':' + (child.tagName === 'OL' ? [...child.children].map((item) => item.textContent).join('|') : child.tagName === 'TABLE' ? [...child.querySelectorAll('td')].map((cell) => cell.textContent).join('|') : child.textContent));
+      // Put the caret inside the first body paragraph.
+      editor.command.executeSetRange(14, 14);
+      await wait();
+      const current = mirror.querySelector('[aria-current="true"]')?.textContent;
+      editor.command.executeInsertElementList([{ value: ' Added' }]);
+      await wait();
+      const updated = mirror.textContent;
+      const hidden = getComputedStyle(mirror.parentElement!).clip;
+      editor.destroy();
+      return { outline, current, updated, hidden, label: mirror.getAttribute('aria-label') };
+    });
+    expect(result.outline).toEqual(['h1:Chapter One', 'p:The keeper climbed the tower.', 'p:Gulls argued over nets.', 'ol:first step|second step', 'table:Cell A|Cell B']);
+    expect(result.current).toBe('The keeper climbed the tower.');
+    expect(result.updated).toContain('Added');
+    expect(result.label).toBe('Document text');
+    expect(result.hidden).toBe('rect(0px, 0px, 0px, 0px)');
+  });
+
   it('raised no page or console errors', () => {
     expect(errors).toEqual([]);
   });

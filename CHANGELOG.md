@@ -25,6 +25,10 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   `@hivemagnus/canvas-word-engine/min` (`dist/canvas-word-engine.min.js` and
   `.map`), recorded in `dist/build-manifest.json`. The readable bundle is
   unchanged.
+- Feature: an opt-in off-screen text mirror for screen readers,
+  `accessibility: { disabled: false, textMirror: true }`. It mirrors headings,
+  paragraphs, lists and table text as DOM, follows edits and marks the caret's
+  block with `aria-current`. Off by default.
 
 ### @hivemagnus/canvas-word-codec
 

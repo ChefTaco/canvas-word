@@ -75,6 +75,16 @@ re-exports the hooks from the main bundle, so they share one module instance.
 The main entry still re-exports them for compatibility, but that is deprecated
 and ends in the next major version.
 
+### Screen readers
+
+Canvas text is invisible to assistive technology. Pass
+`accessibility: { disabled: false, textMirror: true }` to keep an off-screen
+`role="document"` copy of the main text (headings, paragraphs, lists and table
+text) that follows edits and marks the caret's paragraph with
+`aria-current="true"`. Selection and input announcements need only
+`disabled: false`. Header, footer and editing through the mirror are not
+covered.
+
 ### Bundles
 
 `dist/canvas-word-engine.js` is the readable bundle (`.`). The same module is
