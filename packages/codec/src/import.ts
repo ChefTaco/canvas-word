@@ -3,7 +3,7 @@ import { validateStyles,importedStyleId,type WordStyleDefinitions } from './styl
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { Element, Node } from '@xmldom/xmldom';
-import { validateDocxPackage, parseDocumentXml, isWebHyperlink, resolveRelationshipTarget } from './packageValidation.js';
+import { validateDocxPackage, parseDocumentXml, isWebHyperlink, resolveRelationshipTarget, type XmlLimits } from './packageValidation.js';
 import {
   type WordDocument,
   type DocumentParagraph,
@@ -46,11 +46,13 @@ export interface DocxIncomingAsset {
   height: number;
 }
 export interface DocxSection { start: number; end: number; document: WordDocument; stories?: {header?:WordDocument;footer?:WordDocument} }
+/** `limits` raises or lowers the per-part XML limits (see `XmlLimits`), for example for book-length manuscripts. */
+export interface DocxImportOptions { limits?: XmlLimits }
 export interface DocxConversion { document:WordDocument; sections: DocxSection[]; styleDefinitions:WordStyleDefinitions; assets:DocxIncomingAsset[]; losses:Array<{code:string;count:number;message:string}>; detected:Array<{feature:string;count:number}> }
 /** Authoritative bounded conversion reads only validated local package parts.
  * No browser ZIP loader, network fetch, scripts, fields or external images run. */
-export async function importDocx(bytes: Buffer): Promise<DocxConversion> {
-  const files = await validateDocxPackage(bytes);
+export async function importDocx(bytes: Buffer, options: DocxImportOptions = {}): Promise<DocxConversion> {
+  const files = await validateDocxPackage(bytes, false, options.limits);
   const xml = parseDocumentXml(files.get('word/document.xml')!);
   const body = xml.getElementsByTagNameNS(w, 'body').item(0);
   if (!body)

@@ -20,6 +20,19 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   `instanceof WordCodecError` matches errors from either entry point. New
   helpers: `resolveRelationshipTarget` and `isWebHyperlink`.
 
+- Feature: `importDocx(bytes, { limits })` and `validateDocxPackage(bytes,
+  generated, limits)` take per-part XML limits (`maxBytes`, `maxNodes`,
+  `maxDepth`, `maxAttributes`) so book-length manuscripts can be imported. The
+  defaults are unchanged (16 MiB, 200,000 nodes, depth 64, 128 attributes);
+  values are bounded by `XML_LIMIT_CEILINGS`, and invalid values throw
+  `INVALID_XML_LIMITS`. `DOCUMENT_XML_LIMIT` errors now carry
+  `details: { limit, maximum }`.
+- Feature: `measureDocx(bytes, { limits? })` preflights a package without
+  converting it: part sizes, XML node counts, the limits each part exceeds,
+  the feature losses an import would report, and whether validation passes.
+- Fix: packages the codec writes are re-validated with a 1,000,000-node budget,
+  so exporting a long manuscript no longer fails the codec's own check.
+
 #### Upgrade notes
 
 - Documents with `mailto:` (or `ftp:`, `file:` and similar) links used to be
@@ -30,6 +43,10 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   template or theme relationship now get `UNSAFE_DOCUMENT_RELATIONSHIP`
   (the `THEME_UNAVAILABLE` and external-image losses no longer occur on import).
   `./exchange` already behaved this way.
+- A Word manuscript of a few hundred pages can exceed the default 200,000-node
+  limit and fail with `DOCUMENT_XML_LIMIT`. Use `measureDocx` to check first,
+  and pass `importDocx(bytes, { limits: { maxNodes } })` where your memory budget
+  allows (roughly a few hundred bytes of heap per node).
 
 ## @hivemagnus/canvas-word-engine 1.2.1 - 2026-11-26
 

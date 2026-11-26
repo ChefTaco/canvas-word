@@ -7,7 +7,7 @@ import { validateStyles,importedStyleId,type WordStyleDefinitions } from './styl
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import type { Element, Node } from '@xmldom/xmldom'
-import { validateDocxPackage, parseDocumentXml, isWebHyperlink, resolveRelationshipTarget } from './packageValidation.js'
+import { validateDocxPackage, parseDocumentXml, isWebHyperlink, resolveRelationshipTarget, type XmlLimits } from './packageValidation.js'
 import {
   type WordDocument,
   type DocumentParagraph,
@@ -52,11 +52,36 @@ export interface DocxIncomingAsset {
   height: number;
 }
 export interface DocxSection { start: number; end: number; breakAfter?: 'continuous' | 'nextPage'; document: WordDocument; stories?: {header?:WordDocument;footer?:WordDocument} }
+/** `limits` raises or lowers the per-part XML limits (see `XmlLimits`), for example for book-length manuscripts. */
+export interface DocxImportOptions { limits?: XmlLimits }
 export interface DocxConversion { document:WordDocument; sections: DocxSection[]; styleDefinitions:WordStyleDefinitions; fonts:WordEmbeddedFont[]; assets:DocxIncomingAsset[]; losses:Array<{code:string;count:number;message:string}>; detected:Array<{feature:string;count:number}> }
+/** Word features import reports as losses (loss code = element name). Shared with `measureDocx`. */
+export const UNSUPPORTED_WORD_FEATURES: Readonly<Record<string, string>> = Object.freeze({
+  bidi: 'Paragraph bidirectional layout is not represented; exact Unicode text remains preserved in the conversion and original.',
+  rtl: 'Run bidirectional layout is not represented; exact Unicode text remains preserved in the conversion and original.',
+  textDirection: 'Vertical or alternate text flow is retained only in the original.',
+  framePr: 'Positioned paragraph frames are retained only in the original.',
+  titlePg: 'Different first-page headers and footers are retained only in the original.',
+  evenAndOddHeaders: 'Separate odd/even header and footer behavior is retained only in the original.',
+  tblStyle: 'Table-style borders, shading and conditional inheritance remain only in the original; supported table cells, direct text properties and widths are retained.',
+  moveFrom: 'Moved-content revisions are not converted as insert/delete changes.',
+  moveTo: 'Moved-content revisions are not converted as insert/delete changes.',
+  tblPrChange: 'Table structure/property revisions are not supported.',
+  trPrChange: 'Table row revisions are not supported.',
+  tcPrChange: 'Table cell revisions are not supported.',
+  tblGridChange: 'Table grid revisions are not supported.',
+  footnoteReference: 'Footnotes are retained only in the original.',
+  endnoteReference: 'Endnotes are retained only in the original.',
+  fldSimple: 'Advanced fields are imported as displayed text.',
+  sdt: 'Content control behavior is retained only in the original.',
+  object: 'Embedded objects are retained only in the preserved original.',
+  pict: 'Legacy VML drawings are retained only in the preserved original.',
+  altChunk: 'Embedded alternative-content parts cannot be safely converted.',
+})
 /** Authoritative bounded conversion reads only validated local package parts.
  * No browser ZIP loader, network fetch, scripts, fields or external images run. */
-export async function importDocx(bytes: Buffer): Promise<DocxConversion> {
-  const files = await validateDocxPackage(bytes)
+export async function importDocx(bytes: Buffer, options: DocxImportOptions = {}): Promise<DocxConversion> {
+  const files = await validateDocxPackage(bytes, false, options.limits)
   const fonts = readEmbeddedFonts(files)
   const xml = parseDocumentXml(files.get('word/document.xml')!)
   const body = xml.getElementsByTagNameNS(w, 'body').item(0)
@@ -68,28 +93,7 @@ export async function importDocx(bytes: Buffer): Promise<DocxConversion> {
     losses.set(code, { code, count: (prior?.count ?? 0) + count, message })
   }
   const detected: Array<{ feature: string; count: number }> = []
-  const unsupported: Record<string, string> = {
-    bidi: 'Paragraph bidirectional layout is not represented; exact Unicode text remains preserved in the conversion and original.',
-    rtl: 'Run bidirectional layout is not represented; exact Unicode text remains preserved in the conversion and original.',
-    textDirection: 'Vertical or alternate text flow is retained only in the original.',
-    framePr: 'Positioned paragraph frames are retained only in the original.',
-    titlePg: 'Different first-page headers and footers are retained only in the original.',
-    evenAndOddHeaders: 'Separate odd/even header and footer behavior is retained only in the original.',
-    tblStyle: 'Table-style borders, shading and conditional inheritance remain only in the original; supported table cells, direct text properties and widths are retained.',
-    moveFrom: 'Moved-content revisions are not converted as insert/delete changes.',
-    moveTo: 'Moved-content revisions are not converted as insert/delete changes.',
-    tblPrChange: 'Table structure/property revisions are not supported.',
-    trPrChange: 'Table row revisions are not supported.',
-    tcPrChange: 'Table cell revisions are not supported.',
-    tblGridChange: 'Table grid revisions are not supported.',
-    footnoteReference: 'Footnotes are retained only in the original.',
-    endnoteReference: 'Endnotes are retained only in the original.',
-    fldSimple: 'Advanced fields are imported as displayed text.',
-    sdt: 'Content control behavior is retained only in the original.',
-    object: 'Embedded objects are retained only in the preserved original.',
-    pict: 'Legacy VML drawings are retained only in the preserved original.',
-    altChunk: 'Embedded alternative-content parts cannot be safely converted.',
-  }
+  const unsupported = UNSUPPORTED_WORD_FEATURES
   if (fonts.length) detected.push({feature:'embeddedFontsRequireApproval',count:fonts.length})
   const unsupportedCounts=new Map<string,number>()
   // Do not turn a tolerated source-package defect into a claim of OOXML fidelity.

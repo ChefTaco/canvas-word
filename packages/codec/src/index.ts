@@ -11,3 +11,4 @@ export * from './stories.js';
 export * from './styles.js';
 export { validateDocument, documentSchema } from './validation.js';
 export { themeColorTransform } from './theme.js';
+export * from './exchange/measure.js';

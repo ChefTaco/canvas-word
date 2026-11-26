@@ -15,3 +15,4 @@ export { documentSchema } from './validation.js'
 
 export { validateDocument } from './validation.js'
 export { themeColorTransform } from './theme.js'
+export * from './measure.js'

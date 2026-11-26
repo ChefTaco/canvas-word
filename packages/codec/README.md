@@ -85,11 +85,13 @@ parse the Markdown with a Markdown library and map its tree to a `WordDocument`
 
 | Export | Description |
 | --- | --- |
-| `importDocx(bytes)` | DOCX bytes → `DocxConversion` `{ document, sections, styleDefinitions, assets, losses, detected }`. Rejects unsafe or malformed packages with `WordCodecError`. |
+| `importDocx(bytes, { limits? })` | DOCX bytes → `DocxConversion` `{ document, sections, styleDefinitions, assets, losses, detected }`. Rejects unsafe or malformed packages with `WordCodecError`. `limits` overrides the per-part XML limits. |
+| `measureDocx(bytes, { limits? })` | Preflight without converting: part sizes, XML node counts, exceeded limits, predicted feature losses and the validation result. |
 | `exportDocx(document, mode, assets?, stories?, styleDefinitions?)` | `WordDocument` → DOCX `Buffer` (validates first). |
 | `exportDocxSections(input, mode)` | Several documents → one DOCX with independent sections, layouts, header/footer stories and optional section titles. |
 | `validateDocument(value)` / `documentSchema` | Validate untrusted input as a `WordDocument` (Zod schema plus identity, Unicode and review-graph checks). |
-| `validateDocxPackage(bytes)` | Bounded ZIP/XML preflight; returns the package parts as `Map<string, Buffer>`. |
+| `validateDocxPackage(bytes, generated?, limits?)` | Bounded ZIP/XML preflight; returns the package parts as `Map<string, Buffer>`. |
+| `DEFAULT_XML_LIMITS`, `XML_LIMIT_CEILINGS`, `resolveXmlLimits` | Per-part XML limits: 16 MiB, 200,000 nodes, depth 64 and 128 attributes by default. |
 | `readDocumentPackage`, `parseDocumentXml`, `resolveRelationshipTarget`, `isWebHyperlink`, `createZipBuffer`, `crc32` | Lower-level package helpers. |
 | `defaultLayout()` | Default A4 page layout (794×1123 px, 76 px margins, Georgia 16, page numbers on). |
 | `paragraphsOf(document, includeStories?)` | All paragraphs, including table cells (and header/footer when asked). |
@@ -106,6 +108,11 @@ are dropped (their text is kept) with a `HYPERLINK_SCHEME_UNSUPPORTED` loss, and
 any other external relationship (images, templates, themes, OLE objects)
 rejects the package with `UNSAFE_DOCUMENT_RELATIONSHIP`. Internal relationship
 targets may be percent-encoded.
+
+Long manuscripts can exceed the default 200,000-node limit for one XML part.
+Check with `measureDocx`, then raise only what is needed, for example
+`importDocx(bytes, { limits: { maxNodes: 1_000_000 } })`. Each limit is capped
+(`XML_LIMIT_CEILINGS`) so a caller cannot disable the bounds entirely.
 
 Types: `WordDocument`, `DocumentBlock`, `DocumentParagraph`, `DocumentRun`,
 `DocumentTable`, `DocumentImage`, `DocumentBreak`, `TextStyle`,
