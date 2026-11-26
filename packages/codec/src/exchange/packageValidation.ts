@@ -54,8 +54,39 @@ export function readDocumentPackage(bytes: Buffer, generated = false): Promise<M
     })
   })
 }
-export function parseDocumentXml(bytes: Buffer): Document {
-  if (bytes.length > 16 * 1024 * 1024) throw new WordCodecError('DOCUMENT_XML_LIMIT', 'XML part exceeds 16 MiB.', 422)
+/**
+ * Per-part XML complexity limits. `maxBytes` bounds one decoded part,
+ * `maxNodes` all nodes in it (elements, text, comments, CDATA and processing
+ * instructions), `maxDepth` element nesting and `maxAttributes` attributes on
+ * one element. Raise them for book-length documents; each value must be a
+ * positive integer no larger than its entry in `XML_LIMIT_CEILINGS`.
+ */
+export interface XmlLimits { maxBytes?: number; maxNodes?: number; maxDepth?: number; maxAttributes?: number }
+export type ResolvedXmlLimits = Readonly<Required<XmlLimits>>
+export const DEFAULT_XML_LIMITS: ResolvedXmlLimits = Object.freeze({ maxBytes: 16 * 1024 * 1024, maxNodes: 200_000, maxDepth: 64, maxAttributes: 128 })
+/** Packages this codec writes are re-validated with a larger node budget. */
+export const GENERATED_XML_LIMITS: ResolvedXmlLimits = Object.freeze({ ...DEFAULT_XML_LIMITS, maxNodes: 1_000_000 })
+export const XML_LIMIT_CEILINGS: ResolvedXmlLimits = Object.freeze({ maxBytes: 64 * 1024 * 1024, maxNodes: 10_000_000, maxDepth: 256, maxAttributes: 1024 })
+/** Merge caller limits over a base and reject values outside 1..ceiling. */
+export function resolveXmlLimits(limits?: XmlLimits, base: ResolvedXmlLimits = DEFAULT_XML_LIMITS): ResolvedXmlLimits {
+  if (limits === undefined) return base
+  if (limits === null || typeof limits !== 'object') throw new WordCodecError('INVALID_XML_LIMITS', 'XML limits must be an object.', 400)
+  const resolved = { ...base }
+  for (const key of Object.keys(limits) as Array<keyof XmlLimits>) {
+    if (!(key in XML_LIMIT_CEILINGS)) throw new WordCodecError('INVALID_XML_LIMITS', `Unknown XML limit: ${String(key)}.`, 400)
+    const value = limits[key]
+    if (value === undefined) continue
+    if (!Number.isSafeInteger(value) || value < 1 || value > XML_LIMIT_CEILINGS[key]) throw new WordCodecError('INVALID_XML_LIMITS', `XML limit ${key} must be an integer from 1 to ${XML_LIMIT_CEILINGS[key]}.`, 400)
+    resolved[key] = value
+  }
+  return Object.freeze(resolved)
+}
+// Limits a part buffer was validated under, so later parses of that same
+// buffer during one import or export honor the caller's limits.
+const validatedLimits = new WeakMap<Buffer, ResolvedXmlLimits>()
+export function parseDocumentXml(bytes: Buffer, limits?: XmlLimits): Document {
+  const { maxBytes, maxNodes, maxDepth, maxAttributes } = limits === undefined ? (validatedLimits.get(bytes) ?? DEFAULT_XML_LIMITS) : resolveXmlLimits(limits)
+  if (bytes.length > maxBytes) throw new WordCodecError('DOCUMENT_XML_LIMIT', `XML part exceeds ${Number((maxBytes / 1048576).toFixed(3))} MiB.`, 422)
   let text: string
   try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes) }
   catch { throw new WordCodecError('INVALID_DOCUMENT_XML_ENCODING', 'Document XML must use valid UTF-8.', 422) }
@@ -63,11 +94,11 @@ export function parseDocumentXml(bytes: Buffer): Document {
   // Enforce complexity while streaming, before allocating a DOM. Count all
   // nodes, not just elements, and stop on namespace/character errors.
   let count = 0; let depth = 0
-  const node = () => { if (++count > 200_000) throw new WordCodecError('DOCUMENT_XML_LIMIT', 'Document XML node limit exceeded.', 422) }
+  const node = () => { if (++count > maxNodes) throw new WordCodecError('DOCUMENT_XML_LIMIT', 'Document XML node limit exceeded.', 422, { limit: 'maxNodes', maximum: maxNodes }) }
   const parser = new SaxesParser({ xmlns: true, defaultXMLVersion: '1.0', forceXMLVersion: true })
   parser.on('opentag', (tag) => {
     node()
-    if (++depth > 64 || Object.keys(tag.attributes).length > 128) throw new WordCodecError('DOCUMENT_XML_LIMIT', 'Document XML depth or attribute limit exceeded.', 422)
+    if (++depth > maxDepth || Object.keys(tag.attributes).length > maxAttributes) throw new WordCodecError('DOCUMENT_XML_LIMIT', 'Document XML depth or attribute limit exceeded.', 422, { limit: depth > maxDepth ? 'maxDepth' : 'maxAttributes', maximum: depth > maxDepth ? maxDepth : maxAttributes })
   })
   parser.on('closetag', () => { depth-- })
   parser.on('text', node); parser.on('cdata', node); parser.on('comment', node); parser.on('processinginstruction', node)
@@ -84,10 +115,15 @@ export function parseDocumentXml(bytes: Buffer): Document {
   if (!document.documentElement) throw new WordCodecError('INVALID_DOCUMENT_XML', 'Document XML has no root element.', 422)
   return document
 }
-export async function validateDocxPackage(bytes: Buffer, generated = false): Promise<Map<string, Buffer>> {
+/**
+ * Bounded ZIP and XML preflight. `generated` marks a package this codec wrote
+ * (larger archive and node budgets); `limits` overrides the per-part XML limits.
+ */
+export async function validateDocxPackage(bytes: Buffer, generated = false, limits?: XmlLimits): Promise<Map<string, Buffer>> {
+  const resolved = resolveXmlLimits(limits, generated ? GENERATED_XML_LIMITS : DEFAULT_XML_LIMITS)
   const files = await readDocumentPackage(bytes, generated)
   for (const required of ['[Content_Types].xml', '_rels/.rels', 'word/document.xml']) if (!files.has(required)) throw new WordCodecError('INVALID_DOCX', `Missing DOCX part: ${required}`, 422)
-  for (const [name, content] of files) if (name.endsWith('.xml') || name.endsWith('.rels')) parseDocumentXml(content)
+  for (const [name, content] of files) if (name.endsWith('.xml') || name.endsWith('.rels')) { parseDocumentXml(content, resolved); validatedLimits.set(content, resolved) }
   for (const [name, content] of files) if (name.endsWith('.rels')) {
     const relations = parseDocumentXml(content).getElementsByTagNameNS('http://schemas.openxmlformats.org/package/2006/relationships', 'Relationship')
     const ids = new Set<string>()
