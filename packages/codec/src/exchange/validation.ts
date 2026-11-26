@@ -19,10 +19,18 @@ const textStyle = z.object({
 }).strict()
 const paragraphStyle = z.object({ name: z.string().max(100).optional(), alignment: z.enum(['left', 'center', 'right', 'justify']).optional(), lineSpacing: z.number().positive().max(500).optional(), lineRule: z.enum(['auto', 'exact', 'atLeast']).optional(), rightIndent: z.number().min(-500).max(500).optional(), keepTogether: z.boolean().optional(), widowControl: z.boolean().optional(), shading: color.optional(), borders: borders.optional(), before: z.number().min(0).max(500).optional(), after: z.number().min(0).max(500).optional(), indent: z.number().min(-500).max(500).optional(), firstLineIndent: z.number().min(-500).max(500).optional(), keepWithNext: z.boolean().optional(), pageBreakBefore: z.boolean().optional(), heading: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]).optional(), list: z.enum(['bullet', 'number']).optional(), tabs: z.array(z.object({ alignment: z.enum(['left', 'center', 'right', 'decimal', 'bar', 'clear', 'num']), position: z.number().min(-8192).max(8192).refine(value => Math.abs(value * 15 - Math.round(value * 15)) < 1e-8, 'Tab positions require exact twip distances'), leader: z.enum(['none', 'dot', 'hyphen', 'underscore', 'heavy', 'middleDot']).optional() }).strict()).max(128).refine(tabs => new Set(tabs.map(tab => tab.position)).size === tabs.length, 'Tab stop positions must be unique').optional() }).strict().refine(style => style.lineSpacing === undefined || style.lineRule === 'exact' || style.lineRule === 'atLeast' || style.lineSpacing >= 0.5 && style.lineSpacing <= 5, 'Automatic line spacing requires a multiplier between 0.5 and 5')
 const inlineImage = z.object({ assetId: z.number().int().positive(), sha256: z.string().regex(/^[a-f0-9]{64}$/), alt: z.string().max(2000), width: z.number().positive().max(16384), height: z.number().positive().max(16384) }).strict()
+const note = z.object({
+  kind: z.enum(['footnote', 'endnote']),
+  paragraphs: z.array(z.object({
+    type: z.literal('paragraph'), id: identifier,
+    style: paragraphStyle.refine((style) => !style.list, 'Note paragraphs cannot be list items'),
+    runs: z.array(z.object({ id: identifier, text: z.string().max(MAX_DOCUMENT_BYTES), style: textStyle.refine((style) => !style.hyperlink, 'Note text cannot carry hyperlinks') }).strict()).min(1).max(10000),
+  }).strict()).min(1).max(1000),
+}).strict()
 const paragraph = z.object({
   type: z.literal('paragraph'), id: identifier, changeId: identifier.optional(), boundaryChangeId: identifier.optional(),
   style: paragraphStyle,
-  runs: z.array(z.object({ id: identifier, text: z.string().max(MAX_DOCUMENT_BYTES), style: textStyle, changeId: identifier.optional(), inlineImage: inlineImage.optional(), field: z.literal('pageNumber').optional() }).strict().refine(run => !run.field || !run.text && !run.inlineImage && !run.changeId, 'Dynamic fields cannot contain editable text, images or insertion/deletion revisions')).min(1).max(20000),
+  runs: z.array(z.object({ id: identifier, text: z.string().max(MAX_DOCUMENT_BYTES), style: textStyle, changeId: identifier.optional(), inlineImage: inlineImage.optional(), field: z.literal('pageNumber').optional(), note: note.optional() }).strict().refine(run => !run.note || !run.text && !run.inlineImage && !run.field, 'Note references are empty runs').refine(run => !run.field || !run.text && !run.inlineImage && !run.changeId, 'Dynamic fields cannot contain editable text, images or insertion/deletion revisions')).min(1).max(20000),
 }).strict()
 const blockSchema: z.ZodType<DocumentBlock> = z.lazy(() => z.discriminatedUnion('type', [paragraph,
     z.object({ type: z.literal('image'), id: identifier, assetId: z.number().int().positive(), sha256: z.string().regex(/^[a-f0-9]{64}$/), alt: z.string().max(2000), width: z.number().positive().max(16384), height: z.number().positive().max(16384) }).strict(),
@@ -70,8 +78,10 @@ function validateExchangeDocument(raw: unknown): WordDocument {
       add(run.id)
       if (run.inlineImage && (run.text !== '' || Object.keys(run.style).length)) throw new Error('Inline images require a protected empty text/style run')
       runs.set(run.id, { run, text: run.text, blockId: block.id, protected: Boolean(run.field || run.inlineImage) })
+      if (run.note) for (const paragraph of run.note.paragraphs) { add(paragraph.id); for (const noteRun of paragraph.runs) add(noteRun.id) }
     }
   }
+  if ([...document.layout.header, ...document.layout.footer].some((block) => block.runs.some((run) => run.note))) throw new Error('Headers and footers cannot hold footnotes or endnotes')
   const paragraphIds = new Set(paragraphsOf(document, true).map((block) => block.id))
   const byParagraphId = new Map(paragraphsOf(document, true).map((block) => [block.id, block]))
   const adjacent = new Set<string>()

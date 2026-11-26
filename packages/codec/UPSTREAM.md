@@ -65,6 +65,7 @@ used. The fork uses bounded XML/ZIP parsers (`@xmldom/xmldom`, `saxes`,
 | stable-story-round-trip (1.0.0) | A footer paragraph that held only the page counter is not imported as story text, and an exported footer adds an empty paragraph only when it has no content, so header/footer stories no longer grow on each export/import cycle. | `test/roundtrip-corpus.test.ts` | Not submitted |
 | external-link-policy | Only hyperlinks may be external relationships (both entry points); non-HTTP(S) hyperlinks are dropped with a `HYPERLINK_SCHEME_UNSUPPORTED` loss instead of rejecting the document; percent-encoded internal targets resolve to their parts. Root and `./exchange` share package validation. | `test/relationships.test.ts`, `test/themes.test.js` | Not submitted |
 | configurable-xml-limits | Caller-set per-part XML limits with fixed ceilings, a larger node budget for generated packages, and a `measureDocx` preflight that streams parts without converting them. | `test/limits.test.ts` (synthetic 300-page manuscript) | Not submitted |
+| exchange-notes | `./exchange` imports and exports footnotes and endnotes as note runs, renumbering them across sections; notes it cannot represent are dropped with a loss. | `test/notes.test.ts` | Not submitted |
 | esm-package (1.0.0) | Published as an ES module with declarations and an `exports` map; `validateDocument` and `documentSchema` are exported. | `scripts/check-package.mjs` | Packaging only |
 
 ## Full-fidelity exchange entry (1.1.0)

@@ -1,5 +1,5 @@
 import { XMLSerializer, type Element } from '@xmldom/xmldom'
-import { exportDocx, type ExportMode } from './export.js'
+import { exportDocx, noteSeparators, type ExportMode } from './export.js'
 import type { WordDocument } from './model.js'
 import type { DocxAsset } from './export.js'
 import type { WordStories } from './stories.js'
@@ -53,6 +53,8 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
   let abstractIndex = 0
   let drawingIndex = 0
   let revisionIndex = 0
+  const notes = { footnote: [] as string[], endnote: [] as string[] }
+  const noteIndex = { footnote: 0, endnote: 0 }
   for (let sectionIndex = 0; sectionIndex < input.sections.length; sectionIndex++) {
     const source = await validateDocxPackage(
       await exportDocx(input.sections[sectionIndex].document, mode, input.assets, input.sections[sectionIndex].stories,input.styleDefinitions,input.approvedFonts),
@@ -72,7 +74,7 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
     for (let index = 0; index < sourceRelations.length; index++) {
       const element = sourceRelations.item(index)!
       const type = element.getAttribute('Type')!
-      if (/\/(styles|numbering|comments|settings|fontTable)$/.test(type)) continue
+      if (/\/(styles|numbering|comments|settings|fontTable|footnotes|endnotes)$/.test(type)) continue
       if (Array.from(absentStories).some(kind => type.endsWith('/' + kind))) continue
       const id = `rId${++relationshipIndex}`
       relationshipMap.set(element.getAttribute('Id')!, id)
@@ -136,6 +138,27 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
       if (based && !input.styleDefinitions?.[based.getAttribute('w:val')!]) based.setAttribute('w:val', `${prefix}-${based.getAttribute('w:val')}`)
       styles.push(serialize(element))
     }
+    // One footnotes/endnotes part serves every section: renumber notes and
+    // their references, and scope their styles like the section body.
+    const noteMap = { footnote: new Map<string, string>(), endnote: new Map<string, string>() }
+    for (const kind of ['footnote', 'endnote'] as const) {
+      const part = source.get(`word/${kind}s.xml`)
+      if (!part) continue
+      const notesDoc = parseDocumentXml(part)
+      for (const element of Array.from(notesDoc.getElementsByTagNameNS(w, kind))) {
+        const type = element.getAttributeNS(w, 'type')
+        if (type && type !== 'normal') continue
+        const id = String(++noteIndex[kind])
+        noteMap[kind].set(element.getAttributeNS(w, 'id')!, id)
+        element.setAttributeNS(w, 'w:id', id)
+        for (const reference of [...Array.from(element.getElementsByTagNameNS(w, 'pStyle')), ...Array.from(element.getElementsByTagNameNS(w, 'rStyle'))])
+          if (!input.styleDefinitions?.[reference.getAttribute('w:val')!]) reference.setAttribute('w:val', `${prefix}-${reference.getAttribute('w:val')}`)
+        for (const properties of Array.from(element.getElementsByTagNameNS(w, 'pPr'))) if (!properties.getElementsByTagNameNS(w, 'pStyle').length) {
+          const style = notesDoc.createElementNS(w, 'w:pStyle'); style.setAttribute('w:val', `${prefix}-Normal`); properties.insertBefore(style, properties.firstChild)
+        }
+        notes[kind].push(serialize(element))
+      }
+    }
     const descendants = doc.getElementsByTagName('*')
     for (let index = 0; index < descendants.length; index++) {
       const element = descendants.item(index)!
@@ -151,6 +174,8 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
         element.setAttribute('w:id', commentMap.get(element.getAttribute('w:id')!)!)
       if (element.namespaceURI === w && element.localName === 'numId')
         element.setAttribute('w:val', numberMap.get(element.getAttribute('w:val')!)!)
+      if (element.namespaceURI === w && (element.localName === 'footnoteReference' || element.localName === 'endnoteReference'))
+        element.setAttribute('w:id', noteMap[element.localName === 'footnoteReference' ? 'footnote' : 'endnote'].get(element.getAttribute('w:id')!)!)
       if (
         element.namespaceURI === w &&
         ['pStyle','rStyle'].includes(element.localName!) &&
@@ -214,6 +239,8 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
           '/word/comments.xml',
           '/word/numbering.xml',
           '/word/fontTable.xml',
+          '/word/footnotes.xml',
+          '/word/endnotes.xml',
         ].includes(part) || part.startsWith('/word/fonts/')
       )
         continue
@@ -232,6 +259,8 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
           'word/fontTable.xml',
           'word/_rels/fontTable.xml.rels',
           'word/_rels/document.xml.rels',
+          'word/footnotes.xml',
+          'word/endnotes.xml',
         ].includes(name)
       ) {
         let content = bytes
@@ -287,6 +316,10 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
       content: `${declaration}<w:numbering xmlns:w="${w}">${numbers.join('')}</w:numbering>`,
     })
   }
+  for (const kind of ['footnote', 'endnote'] as const) if (notes[kind].length) {
+    relation(kind + 's', kind + 's.xml')
+    files.push({ name: `word/${kind}s.xml`, content: `${declaration}<w:${kind}s xmlns:w="${w}" xmlns:r="${r}">${noteSeparators(kind)}${notes[kind].join('')}</w:${kind}s>` })
+  }
   if (comments.length) {
     relation('comments', 'comments.xml')
     files.push({
@@ -300,6 +333,8 @@ export async function exportDocxSections(input: WordPackageInput, mode: ExportMo
     'settings',
     ...(numbers.length ? ['numbering'] : []),
     ...(comments.length ? ['comments'] : []),
+    ...(notes.footnote.length ? ['footnotes'] : []),
+    ...(notes.endnote.length ? ['endnotes'] : []),
   ]
   files.push({
     name: '[Content_Types].xml',
