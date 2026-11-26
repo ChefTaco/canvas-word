@@ -11,7 +11,7 @@ license and copyright are retained in [LICENSE](LICENSE).
 | Upstream source pin | commit `948e6ac583f63efc48403e2a63a32456ee9c274c`, plus the six exact contribution heads listed below |
 | Closest published upstream | `@hufe921/canvas-editor` 1.0.5, base commit `f8435acb98badcc831174055e9001d42fe51bb0f` |
 | Original fork base | 1.0.4, commit `9af964c2f920da1fcc7d541fae4ab781fcd3bf02` |
-| Current source candidate | 1.2.2 |
+| Current source candidate | 1.3.0 |
 
 The scheduled `Upstream watch` workflow (`scripts/check-upstream.mjs`) compares
 these pins with upstream every week and keeps an issue open while upstream has
@@ -258,7 +258,7 @@ The image-source predicate still decides only whether image sources stay live
 (`src/__tests__/clipboard-html-sanitize.test.ts`). Upstream status: not
 submitted.
 
-### 22. Off-screen text mirror for screen readers
+### 22. Off-screen text mirror for screen readers (1.3.0)
 
 With `accessibility: { disabled: false, textMirror: true }` the existing
 off-screen accessibility region also holds a `role="document"` copy of the
