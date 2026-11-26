@@ -5,6 +5,13 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
 ## Unreleased
 
+### Repository
+
+- Seeded mutation fuzzing of the codec's untrusted-input boundary
+  (`packages/codec/test/fuzz.test.ts`): mutated XML parts, mutated ZIP bytes and
+  random XML through both entry points must convert or raise `WordCodecError`.
+  `FUZZ_ITERATIONS` and `FUZZ_SEED` widen a local run.
+
 ### @hivemagnus/canvas-word-engine
 
 - `./testing` now resolves to its own small entry (`dist/testing.js`) that
@@ -58,15 +65,6 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
   limit and fail with `DOCUMENT_XML_LIMIT`. Use `measureDocx` to check first,
   and pass `importDocx(bytes, { limits: { maxNodes } })` where your memory budget
   allows (roughly a few hundred bytes of heap per node).
-
-## Unreleased
-
-### Repository
-
-- Seeded mutation fuzzing of the codec's untrusted-input boundary
-  (`packages/codec/test/fuzz.test.ts`): mutated XML parts, mutated ZIP bytes and
-  random XML through both entry points must convert or raise `WordCodecError`.
-  `FUZZ_ITERATIONS` and `FUZZ_SEED` widen a local run.
 
 ## @hivemagnus/canvas-word-engine 1.2.1 - 2026-11-26
 
