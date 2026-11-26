@@ -11,7 +11,7 @@ license and copyright are retained in [LICENSE](LICENSE).
 | Upstream source pin | commit `948e6ac583f63efc48403e2a63a32456ee9c274c`, plus the six exact contribution heads listed below |
 | Closest published upstream | `@hufe921/canvas-editor` 1.0.5, base commit `f8435acb98badcc831174055e9001d42fe51bb0f` |
 | Original fork base | 1.0.4, commit `9af964c2f920da1fcc7d541fae4ab781fcd3bf02` |
-| Current source candidate | 1.2.1 |
+| Current source candidate | 1.2.2 |
 
 The source pin includes merged PR 1492, which is not yet verified in a published
 upstream package. The complete runtime source delta from the 1.0.4 base is
@@ -250,6 +250,20 @@ attributes carrying `javascript:`-style or HTML `data:` URLs are removed first.
 The image-source predicate still decides only whether image sources stay live
 (`src/__tests__/clipboard-html-sanitize.test.ts`). Upstream status: not
 submitted.
+
+### 22. HTML import never reparses sanitized markup (1.2.2)
+
+Sanitized markup is converted from its nodes: headings, list items and table
+cells recurse with copies of their child nodes (`replaceHTMLElementTag` copies
+nodes too), never by assigning their serialized HTML to a live element, which
+could rebuild handlers the sanitizer removed. The sanitizer also drops SVG,
+MathML, `template` and raw-text elements (`xmp`, `noembed`, `noframes`,
+`plaintext`) and repeats until its output is stable under an inert
+serialize-and-parse round, returning nothing for markup that never settles.
+`createDomFromElementList` and the clipboard fallback no longer parse HTML
+strings in the live document either
+(`src/__tests__/clipboard-html-reparse.test.ts`,
+`test/browser/clipboard-reparse.test.ts`). Upstream status: not submitted.
 
 ### Packaging changes in this repository (1.0.0)
 

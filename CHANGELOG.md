@@ -3,6 +3,29 @@
 Both packages follow [Semantic Versioning](https://semver.org/) and are released
 independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
+## @hivemagnus/canvas-word-engine 1.2.2 - 2026-11-26
+
+- Security fix: the HTML sanitizer added in 1.2.1 could be bypassed. Pasted or
+  `setHTML` markup inside a heading was serialized and parsed again in the live
+  document after sanitizing, and some markup changes shape when parsed again,
+  so an inline event handler could run in the host page. HTML import now works
+  on the sanitized nodes and never reparses them; headings, list items and
+  table cells recurse with copies of their nodes. The sanitizer also removes
+  SVG, MathML, `template`, `xmp`, `noembed`, `noframes` and `plaintext`
+  elements, and repeats until its output is stable when serialized and parsed
+  again (markup that never settles is dropped). Copy markup
+  (`createDomFromElementList` and the clipboard fallback) is no longer
+  reparsed in the live document either.
+
+### Upgrade notes
+
+- Security: fixes a sanitizer bypass in 1.2.1 — upgrade. Every application
+  that lets users paste HTML or passes untrusted HTML to `setHTML` should move
+  to this release.
+- Pasted and `setHTML` HTML no longer keeps inline SVG or MathML (including
+  their text), `template`, `xmp`, `noembed`, `noframes` or `plaintext`
+  content.
+
 ## @hivemagnus/canvas-word-engine 1.2.1 - 2026-11-26
 
 - Security: always parse pasted and `setHTML` HTML in an inert template and
