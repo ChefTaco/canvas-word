@@ -11,6 +11,11 @@ codec. The upstream MIT license and copyright are retained in [LICENSE](LICENSE)
 | Current upstream snapshot | plugin monorepo commit `0e8a1b36c8e94061edc19ce05b93c12fbad03b34` (includes merged optional-download PR 45) |
 | Current source candidate | 1.1.1 |
 
+The scheduled `Upstream watch` workflow (`scripts/check-upstream.mjs`) compares
+these pins with upstream every week and keeps an issue open while upstream has
+moved. Keep the table rows above in this format; `scripts/test-upstream-watch.mjs`
+parses them.
+
 The repository keeps both upstream snapshots as provenance (they are not
 published or built):
 
