@@ -5,6 +5,13 @@ independently (tags `engine-vX.Y.Z` and `codec-vX.Y.Z`).
 
 ## Unreleased
 
+### Repository
+
+- Seeded mutation fuzzing of the codec's untrusted-input boundary
+  (`packages/codec/test/fuzz.test.ts`): mutated XML parts, mutated ZIP bytes and
+  random XML through both entry points must convert or raise `WordCodecError`.
+  `FUZZ_ITERATIONS` and `FUZZ_SEED` widen a local run.
+
 ### @hivemagnus/canvas-word-engine
 
 - `./testing` now resolves to its own small entry (`dist/testing.js`) that
