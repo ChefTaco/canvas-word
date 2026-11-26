@@ -90,7 +90,7 @@ parse the Markdown with a Markdown library and map its tree to a `WordDocument`
 | `exportDocxSections(input, mode)` | Several documents → one DOCX with independent sections, layouts, header/footer stories and optional section titles. |
 | `validateDocument(value)` / `documentSchema` | Validate untrusted input as a `WordDocument` (Zod schema plus identity, Unicode and review-graph checks). |
 | `validateDocxPackage(bytes)` | Bounded ZIP/XML preflight; returns the package parts as `Map<string, Buffer>`. |
-| `readDocumentPackage`, `parseDocumentXml`, `createZipBuffer`, `crc32` | Lower-level package helpers. |
+| `readDocumentPackage`, `parseDocumentXml`, `resolveRelationshipTarget`, `isWebHyperlink`, `createZipBuffer`, `crc32` | Lower-level package helpers. |
 | `defaultLayout()` | Default A4 page layout (794×1123 px, 76 px margins, Georgia 16, page numbers on). |
 | `paragraphsOf(document, includeStories?)` | All paragraphs, including table cells (and header/footer when asked). |
 | `logicalParagraphs`, `paragraphGroups`, `visibleParagraph`, `visibleRun`, `paragraphStyle`, `runStyle`, `paragraphBoundaryVisible` | Project review state for a `'final' \| 'original' \| 'markup'` view. |
@@ -99,6 +99,13 @@ parse the Markdown with a Markdown library and map its tree to a `WordDocument`
 | `validateStyles`, `importedStyleId` | Named style definitions. |
 | `WordCodecError` | Error with `code`, `status` and optional `details`. |
 | `MAX_DOCUMENT_BYTES`, `CODEC_VERSION` | 16 MiB exchange limit; package version. |
+
+External content is never fetched. Only hyperlinks may point outside the
+package: HTTP(S) links become `style.hyperlink`, other schemes such as `mailto:`
+are dropped (their text is kept) with a `HYPERLINK_SCHEME_UNSUPPORTED` loss, and
+any other external relationship (images, templates, themes, OLE objects)
+rejects the package with `UNSAFE_DOCUMENT_RELATIONSHIP`. Internal relationship
+targets may be percent-encoded.
 
 Types: `WordDocument`, `DocumentBlock`, `DocumentParagraph`, `DocumentRun`,
 `DocumentTable`, `DocumentImage`, `DocumentBreak`, `TextStyle`,

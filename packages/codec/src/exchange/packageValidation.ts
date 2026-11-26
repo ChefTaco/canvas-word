@@ -96,14 +96,43 @@ export async function validateDocxPackage(bytes: Buffer, generated = false): Pro
       if (!id || ids.has(id)) throw new WordCodecError('INVALID_DOCX_RELATIONSHIP', 'Duplicate or missing relationship ID.', 422); ids.add(id)
       const target = relation.getAttribute('Target') ?? ''
       if (relation.getAttribute('TargetMode') === 'External') {
-        if (!/^https?:\/\//i.test(target) || !relation.getAttribute('Type')?.endsWith('/hyperlink')) throw new WordCodecError('UNSAFE_DOCUMENT_RELATIONSHIP', 'Unsupported external relationship.', 422)
+        // Only hyperlinks may point outside the package; images, templates,
+        // OLE objects and other external resources are refused. Non-HTTP(S)
+        // hyperlinks (mailto: and similar) are accepted here and dropped by
+        // the importer with a loss entry, keeping their text.
+        if (!relation.getAttribute('Type')?.endsWith('/hyperlink')) throw new WordCodecError('UNSAFE_DOCUMENT_RELATIONSHIP', 'Unsupported external relationship.', 422)
         continue // Never fetch an external target.
       }
-      const directory = name === '_rels/.rels' ? [] : name.split('/').slice(0, -2)
-      const path: string[] = target.startsWith('/') ? [] : [...directory]
-      for (const part of target.split('/')) { if (!part || part === '.') continue; if (part === '..') { if (!path.length) throw new WordCodecError('INVALID_DOCX_RELATIONSHIP', 'Relationship escapes package root.', 422); path.pop() } else path.push(part) }
-      if (!files.has(path.join('/'))) throw new WordCodecError('INVALID_DOCX_RELATIONSHIP', 'Relationship references a missing part.', 422)
+      const source = name === '_rels/.rels' ? '' : name.split('/').slice(0, -2).join('/')
+      if (resolveRelationshipTarget(source, target, files) === undefined) throw new WordCodecError('INVALID_DOCX_RELATIONSHIP', 'Relationship references a missing part.', 422)
     }
   }
   return files
+}
+
+/** True for the external hyperlink targets the exchange model keeps. */
+export const isWebHyperlink = (target: string): boolean => /^https?:\/\//i.test(target)
+/**
+ * Resolve an internal relationship `Target` against the directory of its
+ * source part (`''` for the package root) and return the matching ZIP entry
+ * name, or `undefined` when no such part exists. OPC part names are URIs, so a
+ * percent-encoded target (`media/image%201.png`) also matches the decoded
+ * entry name. Throws when the target escapes the package root.
+ */
+export function resolveRelationshipTarget(sourceDirectory: string, target: string, files: ReadonlyMap<string, unknown>): string | undefined {
+  const resolve = (value: string): string => {
+    const path: string[] = value.startsWith('/') || !sourceDirectory || sourceDirectory === '.' ? [] : sourceDirectory.split('/')
+    for (const part of value.split('/')) {
+      if (!part || part === '.') continue
+      if (part === '..') { if (!path.length) throw new WordCodecError('INVALID_DOCX_RELATIONSHIP', 'Relationship escapes package root.', 422); path.pop() } else path.push(part)
+    }
+    return path.join('/')
+  }
+  const raw = resolve(target)
+  if (files.has(raw)) return raw
+  if (!target.includes('%')) return undefined
+  let decoded: string
+  try { decoded = decodeURIComponent(target) } catch { return undefined }
+  const resolved = resolve(decoded)
+  return files.has(resolved) ? resolved : undefined
 }

@@ -7,7 +7,7 @@ import { validateStyles,importedStyleId,type WordStyleDefinitions } from './styl
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import type { Element, Node } from '@xmldom/xmldom'
-import { validateDocxPackage, parseDocumentXml } from './packageValidation.js'
+import { validateDocxPackage, parseDocumentXml, isWebHyperlink, resolveRelationshipTarget } from './packageValidation.js'
 import {
   type WordDocument,
   type DocumentParagraph,
@@ -380,11 +380,12 @@ export async function importDocx(bytes: Buffer): Promise<DocxConversion> {
           target:
             element.getAttribute('TargetMode') === 'External'
               ? target
-              : path.posix.normalize(
+              : (resolveRelationshipTarget(path.posix.dirname(part), target, files) ??
+                path.posix.normalize(
                   target.startsWith('/')
                     ? target.slice(1)
                     : path.posix.join(path.posix.dirname(part), target),
-                ),
+                )),
           type: element.getAttribute('Type')!,
           external: element.getAttribute('TargetMode') === 'External',
         })
@@ -450,13 +451,10 @@ export async function importDocx(bytes: Buffer): Promise<DocxConversion> {
         }
         if (element.namespaceURI === w && name === 'hyperlink') {
           const relation = relations.get(element.getAttributeNS(r, 'id')!)
-          visit(
-            element,
-            revision,
-            relation?.external && /^https?:\/\//i.test(relation.target)
-              ? relation.target
-              : undefined,
-          )
+          const web = relation?.external && isWebHyperlink(relation.target)
+          if (relation?.external && !web)
+            lose('HYPERLINK_SCHEME_UNSUPPORTED', 'Links that are not HTTP(S), such as mailto: links, are dropped; their text is kept and the link remains only in the original.')
+          visit(element, revision, web ? relation!.target : undefined)
           continue
         }
         if (element.namespaceURI === w && name === 'r') {

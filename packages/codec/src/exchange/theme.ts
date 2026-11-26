@@ -1,6 +1,6 @@
 import path from 'node:path'
 import type {Element,Node} from '@xmldom/xmldom'
-import {parseDocumentXml} from './packageValidation.js'
+import {parseDocumentXml,resolveRelationshipTarget} from './packageValidation.js'
 const a='http://schemas.openxmlformats.org/drawingml/2006/main'
 const w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 const pr='http://schemas.openxmlformats.org/package/2006/relationships'
@@ -10,7 +10,7 @@ const child=(node:Node|null|undefined,name:string):Element|undefined=>node?Array
  * association stays in the original; the neutral document stores explicit values. */
 export function documentTheme(files:Map<string,Buffer>,lose:ThemeLoss){
  const relations=files.get('word/_rels/document.xml.rels');let themePath:string|undefined
- if(relations)for(const relation of Array.from(parseDocumentXml(relations).getElementsByTagNameNS(pr,'Relationship')))if(relation.getAttribute('Type')?.endsWith('/theme')){if(relation.getAttribute('TargetMode')==='External'){lose('THEME_UNAVAILABLE','External theme resources are never fetched; available explicit fallback values are retained.');continue}const target=relation.getAttribute('Target')!;themePath=path.posix.normalize(target.startsWith('/')?target.slice(1):path.posix.join('word',target))}
+ if(relations)for(const relation of Array.from(parseDocumentXml(relations).getElementsByTagNameNS(pr,'Relationship')))if(relation.getAttribute('Type')?.endsWith('/theme')){if(relation.getAttribute('TargetMode')==='External'){lose('THEME_UNAVAILABLE','External theme resources are never fetched; available explicit fallback values are retained.');continue}const target=relation.getAttribute('Target')!;themePath=resolveRelationshipTarget('word',target,files)??path.posix.normalize(target.startsWith('/')?target.slice(1):path.posix.join('word',target))}
  const bytes=themePath?files.get(themePath):undefined;const root=bytes?parseDocumentXml(bytes).documentElement:undefined;const elements=child(root,'themeElements');const colors=child(elements,'clrScheme');const fonts=child(elements,'fontScheme')
  const colorMapping:Record<string,string>={dark1:'dk1',light1:'lt1',dark2:'dk2',light2:'lt2',text1:'dk1',background1:'lt1',text2:'dk2',background2:'lt2',hyperlink:'hlink',followedHyperlink:'folHlink'}
  const settings=files.get('word/settings.xml');if(settings){const map=parseDocumentXml(settings).getElementsByTagNameNS(w,'clrSchemeMapping').item(0);if(map)for(const [source,key]of [['t1','text1'],['bg1','background1'],['t2','text2'],['bg2','background2'],['accent1','accent1'],['accent2','accent2'],['accent3','accent3'],['accent4','accent4'],['accent5','accent5'],['accent6','accent6'],['hyperlink','hyperlink'],['followedHyperlink','followedHyperlink']]){const target=map.getAttributeNS(w,source);if(target)colorMapping[key]=colorMapping[target]??target}}

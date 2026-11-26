@@ -1,1 +1,2 @@
-export class WordCodecError extends Error {constructor(public readonly code:string,message:string,public readonly status:number,public readonly details?:unknown){super(message);this.name='WordCodecError';}}
+// Shared with the ./exchange entry point so fixes land once.
+export * from './exchange/errors.js';
